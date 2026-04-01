@@ -1,0 +1,45 @@
+{
+  "project": "groupware",
+  "taskType": "신규스펙개발",
+  "label": "신규 스펙 개발",
+  "description": "기획서 기반 신규 기능 전체 파이프라인 (plan → QA)",
+  "stages": [
+    {
+      "id": "plan",
+      "enabled": true
+    },
+    {
+      "id": "plan-review",
+      "enabled": true
+    },
+    {
+      "id": "ticket",
+      "enabled": true
+    },
+    {
+      "id": "ticket-review",
+      "enabled": true
+    },
+    {
+      "id": "develop",
+      "enabled": true
+    },
+    {
+      "id": "develop-review",
+      "enabled": true
+    },
+    {
+      "id": "pr",
+      "enabled": true
+    },
+    {
+      "id": "qa",
+      "enabled": true
+    },
+    {
+      "id": "qa-review",
+      "enabled": true
+    }
+  ],
+  "genericPipeline": "신규스펙개발"
+}

@@ -1,0 +1,16 @@
+{
+  "project": "groupware",
+  "taskType": "간단테스트",
+  "label": "간단 테스트",
+  "description": "플로우 검증용 경량 파이프라인 (plan → QA)",
+  "genericPipeline": "간단테스트",
+  "stages": [
+    { "id": "plan",           "enabled": true  },
+    { "id": "plan-review",    "enabled": true  },
+    { "id": "ticket",         "enabled": true  },
+    { "id": "ticket-review",  "enabled": true  },
+    { "id": "develop",        "enabled": true  },
+    { "id": "develop-review", "enabled": true  },
+    { "id": "qa",             "enabled": true  }
+  ]
+}

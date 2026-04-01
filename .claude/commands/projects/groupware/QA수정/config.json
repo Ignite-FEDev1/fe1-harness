@@ -1,0 +1,29 @@
+{
+  "project": "groupware",
+  "taskType": "QA수정",
+  "label": "QA 이슈 수정",
+  "description": "QA에서 접수된 버그/이슈를 분석하고 최소 변경으로 수정",
+  "stages": [
+    {
+      "id": "develop",
+      "enabled": true
+    },
+    {
+      "id": "develop-review",
+      "enabled": true
+    },
+    {
+      "id": "pr",
+      "enabled": true
+    },
+    {
+      "id": "qa",
+      "enabled": true
+    },
+    {
+      "id": "qa-review",
+      "enabled": true
+    }
+  ],
+  "genericPipeline": "QA수정"
+}

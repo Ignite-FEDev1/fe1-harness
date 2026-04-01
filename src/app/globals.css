@@ -1,26 +1,166 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg-void: #06080c;
+  --bg-base: #0a0e14;
+  --bg-raised: #0f1319;
+  --bg-surface: #141a22;
+  --bg-overlay: #1a212b;
+
+  --border-dim: #1e2b38;
+  --border-base: #2a3848;
+  --border-bright: #384f63;
+
+  --text-ghost: #576878;
+  --text-muted: #7a8f9e;
+  --text-secondary: #a2b4c2;
+  --text-primary: #cad6e2;
+  --text-bright: #eaeff4;
+
+  --accent-green: #00e676;
+  --accent-green-dim: #00c853;
+  --accent-green-glow: rgba(0, 230, 118, 0.12);
+  --accent-green-subtle: rgba(0, 230, 118, 0.06);
+
+  --accent-amber: #ffab00;
+  --accent-amber-dim: #ff8f00;
+  --accent-amber-glow: rgba(255, 171, 0, 0.12);
+
+  --accent-cyan: #00e5ff;
+  --accent-cyan-dim: #00b8d4;
+  --accent-cyan-glow: rgba(0, 229, 255, 0.08);
+
+  --accent-red: #ff1744;
+  --accent-red-glow: rgba(255, 23, 68, 0.12);
+
+  --accent-blue: #448aff;
+  --accent-blue-glow: rgba(68, 138, 255, 0.12);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-background: var(--bg-void);
+  --color-foreground: var(--text-primary);
+  --font-sans: 'IBM Plex Sans', var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', var(--font-geist-mono), monospace;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg-void);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scanline overlay for terminal areas */
+.terminal-bg {
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 230, 118, 0.008) 2px,
+      rgba(0, 230, 118, 0.008) 4px
+    ),
+    var(--bg-base);
+}
+
+/* Pointer cursor for all interactive elements */
+button, [role="button"], a, label[for], select {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* Glow effect for active elements */
+.glow-green {
+  box-shadow: 0 0 20px rgba(0, 230, 118, 0.1), inset 0 0 20px rgba(0, 230, 118, 0.03);
+}
+
+.glow-amber {
+  box-shadow: 0 0 20px rgba(255, 171, 0, 0.1), inset 0 0 20px rgba(255, 171, 0, 0.03);
+}
+
+/* Animated pulse for running status */
+@keyframes status-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.status-pulse {
+  animation: status-pulse 2s ease-in-out infinite;
+}
+
+/* Grid pattern for empty states */
+.grid-pattern {
+  background-image:
+    linear-gradient(var(--border-dim) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-dim) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-bright);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Noise texture overlay */
+.noise-overlay::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  opacity: 0.015;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Form inputs */
+.input-field {
+  background: var(--bg-base);
+  border: 1px solid var(--border-base);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 13px;
+  padding: 8px 12px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+  font-family: var(--font-sans);
+}
+
+.input-field::placeholder {
+  color: var(--text-ghost);
+}
+
+.input-field:focus {
+  border-color: var(--accent-green-dim);
+  box-shadow: 0 0 0 1px var(--accent-green-glow);
+}
+
+/* Mono input variant */
+.input-mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: -0.02em;
+}
+
+/* Selection */
+::selection {
+  background: rgba(0, 230, 118, 0.2);
+  color: var(--text-bright);
 }

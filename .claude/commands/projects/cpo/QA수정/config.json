@@ -1,0 +1,29 @@
+{
+  "project": "cpo",
+  "taskType": "QA수정",
+  "label": "QA 이슈 수정",
+  "description": "CPO QA에서 접수된 이슈 수정",
+  "stages": [
+    {
+      "id": "develop",
+      "enabled": true
+    },
+    {
+      "id": "develop-review",
+      "enabled": true
+    },
+    {
+      "id": "pr",
+      "enabled": true
+    },
+    {
+      "id": "qa",
+      "enabled": false
+    },
+    {
+      "id": "qa-review",
+      "enabled": false
+    }
+  ],
+  "genericPipeline": "QA수정"
+}
