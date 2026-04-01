@@ -21,7 +21,7 @@ export default function SessionDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const { selectedUser, apiMode } = useUser();
+  const { selectedUser, apiMode, currentModel } = useUser();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [stages, setStages] = useState<PipelineStage[]>([]);
@@ -73,6 +73,7 @@ export default function SessionDetailPage({
       body: JSON.stringify({
         userId: selectedUser?.id ?? null,
         apiMode: formApiMode,
+        model: currentModel,
         additionalNotes,
       }),
     });

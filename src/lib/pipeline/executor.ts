@@ -116,16 +116,31 @@ export function resolveApiMode(envVars: Record<string, string>): ApiMode {
   return 'claude-max';
 }
 
+// Default models per API mode
+const DEFAULT_MODEL_BY_MODE: Record<ApiMode, string> = {
+  'h-chat':     'claude-sonnet-4-6',
+  'claude-max': 'claude-opus-4-6',
+  'anthropic':  'claude-opus-4-6',
+};
+
+// H-Chat only supports these models (no opus)
+const H_CHAT_ALLOWED_MODELS = new Set([
+  'claude-sonnet-4-6',
+  'claude-sonnet-4-5',
+  'claude-haiku-4-5',
+]);
+
 export async function executePipeline(options: {
   sessionId: string;
   docsDir: string;
   harnessRoot: string;
   envVars: Record<string, string>;
   apiMode?: ApiMode;
+  model?: string;
   projectSlug?: string;
   taskType?: string;
 }) {
-  const { sessionId, docsDir, harnessRoot, envVars } = options;
+  const { sessionId, docsDir, harnessRoot, envVars, model: requestedModel } = options;
   const supabase = createServerClient();
 
   // Determine API mode: respect explicit override if valid, else auto-detect
@@ -208,8 +223,16 @@ export async function executePipeline(options: {
           'mcp__Framelink-MCP-for-Figma__download_figma_images',
         ],
         permissionMode: 'bypassPermissions',
-        // H-Chat 내부 API 지원 모델: claude-sonnet-4-6, claude-sonnet-4-5, claude-haiku-4-5
-        model: apiMode === 'h-chat' ? 'claude-sonnet-4-6' : 'claude-opus-4-6',
+        // Resolve model: use requested model, but guard H-Chat against unsupported models
+        model: (() => {
+          const fallback = DEFAULT_MODEL_BY_MODE[apiMode];
+          if (!requestedModel) return fallback;
+          if (apiMode === 'h-chat' && !H_CHAT_ALLOWED_MODELS.has(requestedModel)) {
+            console.warn(`[executor] H-Chat does not support ${requestedModel}, falling back to ${fallback}`);
+            return fallback;
+          }
+          return requestedModel;
+        })(),
       },
     });
 

@@ -25,6 +25,30 @@ export interface Fe1User {
 
 export type ApiMode = 'h-chat' | 'anthropic' | 'claude-max';
 
+export const MODEL_OPTIONS: Record<ApiMode, { value: string; label: string }[]> = {
+  'h-chat': [
+    { value: 'claude-sonnet-4-6', label: 'sonnet·4.6' },
+    { value: 'claude-sonnet-4-5', label: 'sonnet·4.5' },
+    { value: 'claude-haiku-4-5',  label: 'haiku·4.5'  },
+  ],
+  'claude-max': [
+    { value: 'claude-opus-4-6',          label: 'opus·4.6'   },
+    { value: 'claude-sonnet-4-6',         label: 'sonnet·4.6' },
+    { value: 'claude-haiku-4-5-20251001', label: 'haiku·4.5'  },
+  ],
+  'anthropic': [
+    { value: 'claude-opus-4-6',          label: 'opus·4.6'   },
+    { value: 'claude-sonnet-4-6',         label: 'sonnet·4.6' },
+    { value: 'claude-haiku-4-5-20251001', label: 'haiku·4.5'  },
+  ],
+};
+
+export const DEFAULT_MODEL: Record<ApiMode, string> = {
+  'h-chat':     'claude-sonnet-4-6',
+  'claude-max': 'claude-opus-4-6',
+  'anthropic':  'claude-opus-4-6',
+};
+
 export const API_MODE_META: Record<ApiMode, { label: string; desc: string; color: string; bg: string; border: string }> = {
   'h-chat': {
     label: 'H-CHAT',
@@ -58,6 +82,9 @@ interface UserContextValue {
   apiMode: ApiMode;
   setApiMode: (mode: ApiMode) => void;
   availableModes: ApiMode[];
+  modelByMode: Record<ApiMode, string>;
+  setModelForMode: (mode: ApiMode, model: string) => void;
+  currentModel: string;
 }
 
 const UserContext = createContext<UserContextValue>({
@@ -69,16 +96,21 @@ const UserContext = createContext<UserContextValue>({
   apiMode: 'h-chat',
   setApiMode: () => {},
   availableModes: [],
+  modelByMode: DEFAULT_MODEL as Record<ApiMode, string>,
+  setModelForMode: () => {},
+  currentModel: 'claude-sonnet-4-6',
 });
 
 const STORAGE_KEY = 'fe1-harness-selected-user-id';
 const API_MODE_KEY = 'fe1-harness-api-mode';
+const MODEL_BY_MODE_KEY = 'fe1-harness-model-by-mode';
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<Fe1User[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [apiMode, setApiModeState] = useState<ApiMode>('claude-max');
+  const [modelByMode, setModelByModeState] = useState<Record<ApiMode, string>>({ ...DEFAULT_MODEL });
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -103,8 +135,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (storedUser) setSelectedUserId(storedUser);
 
     const storedMode = localStorage.getItem(API_MODE_KEY);
-    if (storedMode === 'h-chat' || storedMode === 'anthropic') {
+    if (storedMode === 'h-chat' || storedMode === 'anthropic' || storedMode === 'claude-max') {
       setApiModeState(storedMode);
+    }
+
+    const storedModels = localStorage.getItem(MODEL_BY_MODE_KEY);
+    if (storedModels) {
+      try {
+        const parsed = JSON.parse(storedModels);
+        setModelByModeState((prev) => ({ ...prev, ...parsed }));
+      } catch { /* ignore */ }
     }
   }, []);
 
@@ -116,6 +156,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const setApiMode = useCallback((mode: ApiMode) => {
     setApiModeState(mode);
     localStorage.setItem(API_MODE_KEY, mode);
+  }, []);
+
+  const setModelForMode = useCallback((mode: ApiMode, model: string) => {
+    setModelByModeState((prev) => {
+      const next = { ...prev, [mode]: model };
+      localStorage.setItem(MODEL_BY_MODE_KEY, JSON.stringify(next));
+      return next;
+    });
   }, []);
 
   const selectedUser = users.find((u) => u.id === selectedUserId) ?? null;
@@ -134,6 +182,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   }, [availableModes, apiMode, setApiMode]);
 
+  const currentModel = modelByMode[apiMode] ?? DEFAULT_MODEL[apiMode];
+
   return (
     <UserContext.Provider
       value={{
@@ -145,6 +195,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
         apiMode,
         setApiMode,
         availableModes,
+        modelByMode,
+        setModelForMode,
+        currentModel,
       }}
     >
       {children}

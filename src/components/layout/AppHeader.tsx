@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useUser, API_MODE_META } from '@/contexts/UserContext';
+import { useUser, API_MODE_META, MODEL_OPTIONS } from '@/contexts/UserContext';
 
 const NAV_LINKS = [
   { href: '/sessions', label: 'SESSIONS' },
@@ -20,7 +20,7 @@ const MODE_COLORS: Record<string, { active: string; bg: string; glow: string; te
 
 export function AppHeader() {
   const pathname = usePathname();
-  const { selectedUser, apiMode, setApiMode, availableModes } = useUser();
+  const { selectedUser, apiMode, setApiMode, availableModes, currentModel, setModelForMode } = useUser();
 
   return (
     <header
@@ -116,6 +116,42 @@ export function AppHeader() {
             );
           })}
         </div>
+
+        {/* ── Model Selector ── */}
+        <select
+          value={currentModel}
+          onChange={(e) => setModelForMode(apiMode, e.target.value)}
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: '10px',
+            fontWeight: 600,
+            letterSpacing: '0.04em',
+            padding: '4px 8px',
+            paddingRight: '22px',
+            color: 'var(--text-primary)',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid var(--border-bright)',
+            borderRadius: '5px',
+            outline: 'none',
+            appearance: 'none',
+            WebkitAppearance: 'none',
+            cursor: 'pointer',
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23556677' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'right 6px center',
+            marginRight: '2px',
+          }}
+        >
+          {MODEL_OPTIONS[apiMode].map((opt) => (
+            <option
+              key={opt.value}
+              value={opt.value}
+              style={{ background: '#0f1923', color: '#c9d5e0' }}
+            >
+              {opt.label}
+            </option>
+          ))}
+        </select>
 
         {/* ── Nav Links ── */}
         {NAV_LINKS.map(({ href, label }) => {

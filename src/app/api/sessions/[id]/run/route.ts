@@ -55,11 +55,13 @@ export async function POST(
   // Parse request body for userId and apiMode
   let userId: string | null = null;
   let apiMode: string | null = null;
+  let model: string | undefined;
   let additionalNotes: string | undefined;
   try {
     const body = await request.json();
     userId = body.userId ?? null;
     apiMode = body.apiMode ?? null;
+    model = body.model ?? undefined;
     additionalNotes = body.additionalNotes ?? undefined;
   } catch {
     // no body is fine
@@ -188,6 +190,7 @@ export async function POST(
     harnessRoot,
     envVars,
     apiMode: (apiMode as 'h-chat' | 'anthropic' | null) ?? undefined,
+    model,
     projectSlug,
     taskType,
   }).catch((err) => {

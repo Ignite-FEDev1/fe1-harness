@@ -405,46 +405,6 @@ export default function AdminPage() {
           )}
         </section>
 
-        {/* API Mode Indicator */}
-        {selectedUser && (() => {
-          const hChat = selectedUser.tokens.H_CHAT_TOKEN?.masked;
-          const anthropic = selectedUser.tokens.ANTHROPIC_API_KEY?.masked;
-          const mode = hChat ? 'h-chat' : anthropic ? 'anthropic' : null;
-
-          return (
-            <section>
-              <SectionHeader>API MODE — {selectedUser.name.toUpperCase()}</SectionHeader>
-              <div
-                className="flex items-center gap-4 px-4 py-3 rounded"
-                style={{
-                  background: mode ? 'var(--accent-green-subtle)' : 'var(--accent-red-glow)',
-                  border: `1px solid ${mode ? 'var(--accent-green-dim)' : 'var(--accent-red)'}`,
-                }}
-              >
-                <div className="flex items-center gap-2">
-                  <span
-                    className="w-2 h-2 rounded-full"
-                    style={{ background: mode ? 'var(--accent-green)' : 'var(--accent-red)' }}
-                  />
-                  <span
-                    className="text-xs font-semibold"
-                    style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: mode ? 'var(--accent-green)' : 'var(--accent-red)' }}
-                  >
-                    {mode === 'h-chat' ? 'H-CHAT (autoever)' : mode === 'anthropic' ? 'ANTHROPIC API' : 'NO API KEY'}
-                  </span>
-                </div>
-                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                  {mode === 'h-chat'
-                    ? 'H_CHAT_TOKEN 감지 → h-chat-api.autoever.com 경유'
-                    : mode === 'anthropic'
-                      ? 'ANTHROPIC_API_KEY 감지 → api.anthropic.com 직접 연결'
-                      : 'H_CHAT_TOKEN 또는 ANTHROPIC_API_KEY를 아래에서 입력해주세요'}
-                </span>
-              </div>
-            </section>
-          );
-        })()}
-
         {/* Token Editing */}
         {selectedUser && (
           <section>
