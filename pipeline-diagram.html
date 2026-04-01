@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Groupware × 신규스펙개발 파이프라인</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg-void:    #080d13;
+    --bg-base:    #0a0f16;
+    --bg-raised:  #0f1923;
+    --bg-overlay: #141d28;
+    --bg-card:    #111922;
+    --border-dim: #1a2535;
+    --border-base:#1e2e42;
+    --border-bright:#2a3f57;
+    --text-ghost: #3a4f66;
+    --text-muted: #556677;
+    --text-dim:   #6b7f94;
+    --text-secondary:#8899aa;
+    --text-primary: #b0c4d8;
+    --text-bright:  #d0e0ef;
+    --green:      #00e676;
+    --green-dim:  rgba(0,230,118,0.15);
+    --green-glow: rgba(0,230,118,0.08);
+    --cyan:       #00e5ff;
+    --cyan-dim:   rgba(0,229,255,0.15);
+    --amber:      #ffab00;
+    --amber-dim:  rgba(255,171,0,0.15);
+    --red:        #ff5252;
+    --purple:     #b388ff;
+    --purple-dim: rgba(179,136,255,0.15);
+    --teal:       #64ffda;
+    --teal-dim:   rgba(100,255,218,0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg-void);
+    color: var(--text-primary);
+    font-family: 'Noto Sans KR', sans-serif;
+    min-height: 100vh;
+    padding: 40px 32px 80px;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 48px;
+    gap: 24px;
+  }
+  .header-left {}
+  .header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--green-glow);
+    border: 1px solid rgba(0,230,118,0.25);
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--green);
+    margin-bottom: 12px;
+  }
+  .header-badge::before {
+    content: '';
+    width: 5px; height: 5px;
+    background: var(--green);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--green);
+  }
+  h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text-bright);
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+    margin-bottom: 6px;
+  }
+  h1 span { color: var(--green); }
+  .header-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.03em;
+  }
+  .header-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
+  .meta-chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+
+  /* ── Input Sources ── */
+  .inputs-section {
+    margin-bottom: 40px;
+  }
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: var(--text-ghost);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .inputs-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .input-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-base);
+    border-radius: 6px;
+    padding: 7px 12px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .input-chip .ic { font-size: 14px; }
+  .input-chip span { font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+
+  /* ── Arrow connector ── */
+  .connector-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin: 0 auto 0;
+    width: 100%;
+  }
+  .arrow-down {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 4px 0;
+  }
+  .arrow-line {
+    width: 2px;
+    height: 28px;
+    background: linear-gradient(to bottom, var(--border-base), var(--border-bright));
+  }
+  .arrow-head {
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid var(--border-bright);
+  }
+  .arrow-pass {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--green);
+    letter-spacing: 0.1em;
+    margin-bottom: 2px;
+  }
+
+  /* ── Pipeline wrapper ── */
+  .pipeline {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    max-width: 960px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  /* ── Review pair ── */
+  .review-pair {
+    display: grid;
+    grid-template-columns: 1fr 60px 1fr;
+    align-items: center;
+    gap: 0;
+    position: relative;
+  }
+  .review-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .ra-line {
+    width: 2px;
+    flex: 1;
+    min-height: 16px;
+    background: var(--border-base);
+  }
+  .ra-head-right {
+    width: 0; height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 7px solid var(--border-bright);
+    transform: translateX(2px);
+  }
+  .ra-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    writing-mode: vertical-lr;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+  }
+
+  /* ── Stage card ── */
+  .stage-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-base);
+    border-radius: 10px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stage-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .stage-card.color-green::before  { background: linear-gradient(90deg, transparent, var(--green), transparent); }
+  .stage-card.color-cyan::before   { background: linear-gradient(90deg, transparent, var(--cyan), transparent); }
+  .stage-card.color-amber::before  { background: linear-gradient(90deg, transparent, var(--amber), transparent); }
+  .stage-card.color-purple::before { background: linear-gradient(90deg, transparent, var(--purple), transparent); }
+  .stage-card.color-teal::before   { background: linear-gradient(90deg, transparent, var(--teal), transparent); }
+
+  .stage-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .stage-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    padding: 2px 7px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .num-green  { color: var(--green);  background: var(--green-dim);  border: 1px solid rgba(0,230,118,0.3); }
+  .num-cyan   { color: var(--cyan);   background: var(--cyan-dim);   border: 1px solid rgba(0,229,255,0.3); }
+  .num-amber  { color: var(--amber);  background: var(--amber-dim);  border: 1px solid rgba(255,171,0,0.3); }
+  .num-purple { color: var(--purple); background: var(--purple-dim); border: 1px solid rgba(179,136,255,0.3); }
+  .num-teal   { color: var(--teal);   background: var(--teal-dim);   border: 1px solid rgba(100,255,218,0.3); }
+
+  .stage-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-bright);
+    flex: 1;
+  }
+  .stage-name-en {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-ghost);
+    letter-spacing: 0.06em;
+  }
+  .agent-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .ab-green  { color: var(--green);  background: var(--green-glow);  border: 1px solid rgba(0,230,118,0.2); }
+  .ab-cyan   { color: var(--cyan);   background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.2); }
+  .ab-purple { color: var(--purple); background: var(--purple-dim); border: 1px solid rgba(179,136,255,0.2); }
+  .ab-teal   { color: var(--teal);   background: var(--teal-dim);   border: 1px solid rgba(100,255,218,0.2); }
+  .ab-amber  { color: var(--amber);  background: var(--amber-dim);  border: 1px solid rgba(255,171,0,0.2); }
+
+  .stage-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 14px;
+  }
+
+  /* io row */
+  .io-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: start;
+    gap: 12px;
+  }
+  .io-col { display: flex; flex-direction: column; gap: 5px; }
+  .io-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: var(--text-ghost);
+    margin-bottom: 3px;
+  }
+  .io-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--border-bright);
+    padding-top: 16px;
+  }
+  .artifact {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .artifact .dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--border-bright);
+  }
+  .artifact.out .dot { background: var(--green); box-shadow: 0 0 4px var(--green); }
+  .artifact.out { color: var(--text-secondary); }
+  .artifact.out.cyan .dot { background: var(--cyan); box-shadow: 0 0 4px var(--cyan); }
+  .artifact.out.cyan { color: var(--text-secondary); }
+
+  /* special rule tag */
+  .rules-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--amber);
+    background: var(--amber-dim);
+    border: 1px solid rgba(255,171,0,0.25);
+    border-radius: 3px;
+    padding: 2px 7px;
+    margin-top: 8px;
+  }
+
+  /* sub-agents section */
+  .sub-agents {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-dim);
+  }
+  .sub-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: var(--text-ghost);
+    margin-bottom: 8px;
+  }
+  .sub-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+  .sub-card {
+    background: var(--bg-raised);
+    border: 1px solid var(--border-dim);
+    border-radius: 6px;
+    padding: 10px 12px;
+  }
+  .sub-card-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-bright);
+    margin-bottom: 4px;
+  }
+  .sub-card-out {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-muted);
+  }
+  .sub-card-out span {
+    color: var(--cyan);
+  }
+
+  /* explore-agent indicator */
+  .explore-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--teal);
+    background: var(--teal-dim);
+    border: 1px solid rgba(100,255,218,0.2);
+    border-radius: 3px;
+    padding: 2px 7px;
+    margin-top: 6px;
+  }
+
+  /* retry loop */
+  .retry-wrap {
+    position: relative;
+    margin: 0 auto;
+    max-width: 960px;
+  }
+  .retry-block {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin: 4px 0;
+    padding-right: 0;
+  }
+  .retry-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--red);
+    white-space: nowrap;
+  }
+  .retry-arrow-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+  .retry-line {
+    height: 2px;
+    background: var(--red);
+    opacity: 0.4;
+  }
+  .retry-arrowhead {
+    width: 0; height: 0;
+    border-right: 6px solid transparent;
+    border-bottom: 4px solid transparent;
+    border-top: 4px solid rgba(255,82,82,0.4);
+  }
+
+  /* final output section */
+  .outputs-section {
+    margin-top: 16px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-base);
+    border-radius: 10px;
+    padding: 20px 24px;
+  }
+  .outputs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .output-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-dim);
+    border-radius: 6px;
+    padding: 10px 14px;
+  }
+  .output-card .oc-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--green);
+    margin-bottom: 3px;
+  }
+  .output-card .oc-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* special rules panel */
+  .rules-panel {
+    margin: 32px auto 0;
+    max-width: 960px;
+    background: rgba(255,171,0,0.04);
+    border: 1px solid rgba(255,171,0,0.2);
+    border-radius: 10px;
+    padding: 20px 24px;
+  }
+  .rules-panel-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    color: var(--amber);
+    margin-bottom: 14px;
+  }
+  .rules-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px;
+  }
+  .rule-item {
+    background: var(--bg-void);
+    border: 1px solid var(--border-dim);
+    border-radius: 6px;
+    padding: 10px 14px;
+  }
+  .rule-item-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--amber);
+    margin-bottom: 6px;
+  }
+  .rule-item-content {
+    font-size: 11px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* footer */
+  .footer {
+    margin-top: 48px;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-ghost);
+    letter-spacing: 0.06em;
+  }
+
+  /* divider */
+  .section-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-dim), transparent);
+    margin: 32px auto;
+    max-width: 960px;
+  }
+
+  /* review card same styles but slightly different bg */
+  .stage-card.review {
+    background: rgba(10,15,22,0.8);
+    border-style: dashed;
+    border-color: var(--border-dim);
+  }
+
+  .pass-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    font-weight: 700;
+    color: var(--green);
+    background: var(--green-glow);
+    border: 1px solid rgba(0,230,118,0.2);
+    border-radius: 2px;
+    padding: 1px 5px;
+    letter-spacing: 0.08em;
+    margin-left: 4px;
+  }
+  .fail-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    font-weight: 700;
+    color: var(--red);
+    background: rgba(255,82,82,0.1);
+    border: 1px solid rgba(255,82,82,0.2);
+    border-radius: 2px;
+    padding: 1px 5px;
+    letter-spacing: 0.08em;
+    margin-left: 4px;
+  }
+
+  .pair-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 24px 1fr;
+    align-items: center;
+    gap: 0;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+  .pair-arrow-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    height: 100%;
+    padding: 20px 0;
+  }
+  .pa-line {
+    flex: 1;
+    width: 2px;
+    background: var(--border-base);
+  }
+  .pa-head {
+    width: 0; height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 7px solid var(--border-bright);
+  }
+  .pa-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    color: var(--text-muted);
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    letter-spacing: 0.1em;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .arrow-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  /* retry annotation inline */
+  .retry-annotation {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    max-width: 960px;
+    margin: 2px auto;
+    padding-right: 8px;
+  }
+  .retry-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--red);
+    background: rgba(255,82,82,0.08);
+    border: 1px solid rgba(255,82,82,0.2);
+    border-radius: 3px;
+    padding: 2px 8px;
+    letter-spacing: 0.06em;
+  }
+  .retry-dots {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: rgba(255,82,82,0.4);
+  }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<div class="header">
+  <div class="header-left">
+    <div class="header-badge">FE1 HARNESS · PIPELINE MAP</div>
+    <h1>Groupware × <span>신규스펙개발</span></h1>
+    <div class="header-sub">orchestrator.md → generic/신규스펙개발/ → projects/groupware/신규스펙개발/</div>
+  </div>
+  <div class="header-meta">
+    <div class="meta-chip" style="color:var(--green);background:var(--green-dim);border:1px solid rgba(0,230,118,0.25);">9 STAGES · ALL ENABLED</div>
+    <div class="meta-chip" style="color:var(--cyan);background:var(--cyan-dim);border:1px solid rgba(0,229,255,0.25);">GENERIC: 신규스펙개발</div>
+    <div class="meta-chip" style="color:var(--amber);background:var(--amber-dim);border:1px solid rgba(255,171,0,0.25);">PROJECT RULES: ACTIVE</div>
+  </div>
+</div>
+
+<!-- ── INPUT SOURCES ── -->
+<div class="inputs-section" style="max-width:960px;margin:0 auto 40px;">
+  <div class="section-label">파이프라인 입력</div>
+  <div class="inputs-row">
+    <div class="input-chip"><span class="ic">📋</span><span>Confluence URLs</span></div>
+    <div class="input-chip"><span class="ic">🎨</span><span>Figma URLs + Notes</span></div>
+    <div class="input-chip"><span class="ic">📐</span><span>Swagger / API 문서</span></div>
+    <div class="input-chip"><span class="ic">💻</span><span>마크업 파일 경로</span></div>
+    <div class="input-chip"><span class="ic">🌿</span><span>브랜치명 / 베이스</span></div>
+    <div class="input-chip"><span class="ic">🎫</span><span>FE- 티켓 접두사</span></div>
+    <div class="input-chip"><span class="ic">🖥️</span><span>assemble-fe 로컬 경로</span></div>
+    <div class="input-chip"><span class="ic">🔑</span><span>BE API 상태 (dev/stg/none)</span></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PIPELINE
+════════════════════════════════════════════ -->
+<div class="pipeline">
+
+  <!-- ── STAGE 1: PLAN ── -->
+  <div style="max-width:960px;margin:0 auto;width:100%;">
+    <div class="stage-card color-green">
+      <div class="stage-header">
+        <div class="stage-num num-green">STAGE 1</div>
+        <div class="stage-name">기획 분석 <span class="stage-name-en">plan</span></div>
+        <div class="agent-badge ab-green">Planner Agent</div>
+      </div>
+      <div class="stage-desc">
+        Confluence 기획서·Figma·Swagger·API 문서를 수집·분석하고, assemble-fe 코드베이스 구조를 파악하여
+        FE 작업 계획서(plan.md)를 생성합니다. PC/Mobile 양쪽 화면을 모두 포함합니다.
+      </div>
+      <div class="io-row">
+        <div class="io-col">
+          <div class="io-label">INPUT</div>
+          <div class="artifact"><div class="dot"></div>_context.md (Confluence 수집본)</div>
+          <div class="artifact"><div class="dot"></div>session.md (입력값 전체)</div>
+          <div class="artifact"><div class="dot"></div>Figma 이미지 (다운로드)</div>
+          <div class="artifact"><div class="dot"></div>assemble-fe 코드베이스</div>
+        </div>
+        <div class="io-arrow">→</div>
+        <div class="io-col">
+          <div class="io-label">OUTPUT</div>
+          <div class="artifact out"><div class="dot"></div>plan.md</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        <div class="explore-badge">🔍 Explore Sub-Agent — 코드베이스 분석</div>
+        <div class="rules-tag">⚙ RULES_PLANNER 주입 — PC/Mobile 병행, packages/shared 우선</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAIR ARROW + retry -->
+  <div class="pair-wrapper" style="min-height:80px;">
+    <div></div>
+    <div class="pair-arrow-col">
+      <div class="pa-line"></div>
+      <div class="pa-head"></div>
+      <div class="pa-label">검수</div>
+      <div class="pa-line"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:8px;padding-left:8px;">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--red);margin-bottom:4px;">FAIL → plan 재작성 (최대 3회)</div>
+      <div style="height:1px;width:120px;background:rgba(255,82,82,0.3);"></div>
+    </div>
+  </div>
+
+  <!-- ── STAGE 2: PLAN-REVIEW ── -->
+  <div style="max-width:960px;margin:0 auto;width:100%;">
+    <div class="stage-card review color-green">
+      <div class="stage-header">
+        <div class="stage-num num-green">STAGE 2</div>
+        <div class="stage-name">계획 검수 <span class="stage-name-en">plan-review</span></div>
+        <div class="agent-badge ab-green">Reviewer Agent</div>
+        <span class="pass-badge">PASS →</span>
+        <span class="fail-badge">FAIL ↩</span>
+      </div>
+      <div class="stage-desc">
+        plan.md와 기획서를 1:1 대조합니다. 모든 화면·기능·상세 동작·API 범위·마크업 전략이 누락 없이 기술되었는지 검수합니다.
+        하나라도 누락이면 FAIL → Planner에게 피드백 전달 후 재작성.
+      </div>
+      <div class="io-row">
+        <div class="io-col">
+          <div class="io-label">INPUT</div>
+          <div class="artifact"><div class="dot"></div>_context.md (기준)</div>
+          <div class="artifact"><div class="dot"></div>plan.md (검수 대상)</div>
+        </div>
+        <div class="io-arrow">→</div>
+        <div class="io-col">
+          <div class="io-label">OUTPUT</div>
+          <div class="artifact out"><div class="dot"></div>review-plan.md (PASS/FAIL + 체크리스트)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARROW DOWN -->
+  <div class="arrow-center">
+    <div class="arrow-down">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:var(--green);letter-spacing:0.1em;margin-bottom:2px;">PASS</div>
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+    </div>
+  </div>
+
+  <!-- ── STAGE 3: TICKET ── -->
+  <div style="max-width:960px;margin:0 auto;width:100%;">
+    <div class="stage-card color-cyan">
+      <div class="stage-header">
+        <div class="stage-num num-cyan">STAGE 3</div>
+        <div class="stage-name">티켓 생성 <span class="stage-name-en">ticket</span></div>
+        <div class="agent-badge ab-cyan">Ticket Agent</div>
+      </div>
+      <div class="stage-desc">
+        plan.md를 기반으로 Jira에 바로 붙여넣을 수 있는 FE 티켓을 분해합니다.
+        타입 정의 → API mock → 비즈니스 로직 → 페이지(PC) → 페이지(MO) → 마크업 반영 → 실 API 연동 순서로 분해하며,
+        각 티켓에 공수(d)·선행·의존(마크업/BE API/없음)을 명시합니다.
+      </div>
+      <div class="io-row">
+        <div class="io-col">
+          <div class="io-label">INPUT</div>
+          <div class="artifact"><div class="dot"></div>plan.md</div>
+          <div class="artifact"><div class="dot"></div>_context.md</div>
+          <div class="artifact"><div class="dot"></div>assemble-fe 코드베이스</div>
+        </div>
+        <div class="io-arrow">→</div>
+        <div class="io-col">
+          <div class="io-label">OUTPUT</div>
+          <div class="artifact out cyan"><div class="dot"></div>tickets.md</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        <div class="explore-badge">🔍 Explore Sub-Agent — 코드베이스 분석</div>
+        <div class="rules-tag">⚙ RULES_TICKET — PC·MO·BO 별도 티켓, FE- prefix</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAIR ARROW + retry -->
+  <div class="pair-wrapper" style="min-height:80px;">
+    <div></div>
+    <div class="pair-arrow-col">
+      <div class="pa-line"></div>
+      <div class="pa-head"></div>
+      <div class="pa-label">검수</div>
+      <div class="pa-line"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:8px;padding-left:8px;">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--red);margin-bottom:4px;">FAIL → ticket 재분해 (최대 3회)</div>
+      <div style="height:1px;width:140px;background:rgba(255,82,82,0.3);"></div>
+    </div>
+  </div>
+
+  <!-- ── STAGE 4: TICKET-REVIEW ── -->
+  <div style="max-width:960px;margin:0 auto;width:100%;">
+    <div class="stage-card review color-cyan">
+      <div class="stage-header">
+        <div class="stage-num num-cyan">STAGE 4</div>
+        <div class="stage-name">티켓 검수 <span class="stage-name-en">ticket-review</span></div>
+        <div class="agent-badge ab-cyan">Reviewer Agent</div>
+        <span class="pass-badge">PASS →</span>
+        <span class="fail-badge">FAIL ↩</span>
+      </div>
+      <div class="stage-desc">
+        plan.md의 모든 작업 항목이 tickets.md에 포함되었는지, 작업 순서가 올바른지(타입→mock→로직→페이지→마크업→API 순),
+        AC가 측정 가능한지 검수합니다.
+      </div>
+      <div class="io-row">
+        <div class="io-col">
+          <div class="io-label">INPUT</div>
+          <div class="artifact"><div class="dot"></div>plan.md (기준)</div>
+          <div class="artifact"><div class="dot"></div>tickets.md (검수 대상)</div>
+        </div>
+        <div class="io-arrow">→</div>
+        <div class="io-col">
+          <div class="io-label">OUTPUT</div>
+          <div class="artifact out cyan"><div class="dot"></div>review-tickets.md (PASS/FAIL)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARROW DOWN -->
+  <div class="arrow-center">
+    <div class="arrow-down">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:var(--green);letter-spacing:0.1em;margin-bottom:2px;">PASS</div>
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+    </div>
+  </div>
+
+  <!-- ── STAGE 5: DEVELOP ── -->
+  <div style="max-width:960px;margin:0 auto;width:100%;">
+    <div class="stage-card color-purple">
+      <div class="stage-header">
+        <div class="stage-num num-purple">STAGE 5</div>
+        <div class="stage-name">코드 구현 <span class="stage-name-en">develop</span></div>
+        <div class="agent-badge ab-purple">Developer Agent</div>
+      </div>
+      <div class="stage-desc">
+        Git Worktree를 생성하여 격리된 환경에서 구현합니다. 각 티켓의 '의존' 필드를 확인하여
+        BE API·마크업 미준비 티켓은 보류합니다. tsc 타입 체크 후 <code style="font-family:monospace;color:var(--purple)">feat: {요약}</code> 형식으로 커밋합니다.
+      </div>
+      <div class="io-row">
+        <div class="io-col">
+          <div class="io-label">INPUT</div>
+          <div class="artifact"><div class="dot"></div>plan.md + tickets.md</div>
+          <div class="artifact"><div class="dot"></div>_context.md (기획 상세)</div>
+          <div class="artifact"><div class="dot"></div>Figma 이미지 (다운로드된 것)</div>
+          <div class="artifact"><div class="dot"></div>assemble-fe worktree</div>
+        </div>
+        <div class="io-arrow">→</div>
+        <div class="io-col">
+          <div class="io-label">OUTPUT</div>
+          <div class="artifact out"><div class="dot"></div>구현 코드 (Git commit)</div>
+          <div class="artifact out"><div class="dot"></div>changed-files.md</div>
+          <div class="artifact out"><div class="dot"></div>pending-tickets.md</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        <div style="display:inline-flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--purple);background:var(--purple-dim);border:1px solid rgba(179,136,255,0.2);border-radius:3px;padding:2px 7px;">
+          🌿 Git Worktree 격리 (sessions/{uuid}/worktree)
+        </div>
+        <div class="rules-tag">⚙ RULES_DEVELOPER — packages/shared, Emotion, else 금지</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAIR ARROW + retry -->
+  <div class="pair-wrapper" style="min-height:80px;">
+    <div></div>
+    <div class="pair-arrow-col">
+      <div class="pa-line"></div>
+      <div class="pa-head"></div>
+      <div class="pa-label">3 병렬 검수</div>
+      <div class="pa-line"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:8px;padding-left:8px;">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--red);margin-bottom:4px;">FAIL → develop 재구현 (최대 3회)</div>
+      <div style="height:1px;width:160px;background:rgba(255,82,82,0.3);"></div>
+    </div>
+  </div>
+
+  <!-- ── STAGE 6: DEVELOP-REVIEW ── -->
+  <div style="max-width:960px;margin:0 auto;width:100%;">
+    <div class="stage-card review color-purple">
+      <div class="stage-header">
+        <div class="stage-num num-purple">STAGE 6</div>
+        <div class="stage-name">코드 검수 <span class="stage-name-en">develop-review</span></div>
+        <div class="agent-badge ab-purple">Reviewer ×3 (병렬)</div>
+        <span class="pass-badge">PASS →</span>
+        <span class="fail-badge">FAIL ↩</span>
+      </div>
+      <div class="stage-desc">
+        3개 Sub-Agent를 <strong>동시에(병렬)</strong> 실행합니다. 하나라도 FAIL이면 종합 FAIL → Developer에게 피드백 전달.
+      </div>
+      <div class="sub-agents">
+        <div class="sub-label">PARALLEL SUB-AGENTS</div>
+        <div class="sub-grid">
+          <div class="sub-card">
+            <div class="sub-card-name">① AC 검수</div>
+            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;line-height:1.5;">
+              모든 티켓 AC·기획서 조건부 로직이 코드에 구현되었는지 확인
+            </div>
+            <div class="sub-card-out">→ <span>review-code-ac.md</span></div>
+            <div class="rules-tag" style="font-size:8px;padding:1px 5px;">⚙ RULES_REVIEWER_AC</div>
+          </div>
+          <div class="sub-card">
+            <div class="sub-card-name">② 아키텍처 검수</div>
+            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;line-height:1.5;">
+              단일 책임·관심사 분리·SWR/컴포넌트 레이어 구분·사이드이펙트 없음 확인
+            </div>
+            <div class="sub-card-out">→ <span>review-code-arch.md</span></div>
+            <div class="rules-tag" style="font-size:8px;padding:1px 5px;">⚙ RULES_REVIEWER_ARCH</div>
+          </div>
+          <div class="sub-card">
+            <div class="sub-card-name">③ 컨벤션 검수</div>
+            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;line-height:1.5;">
+              else 금지·공통 컴포넌트 사용·any 금지·import 순서·Emotion 패턴 일치 확인
+            </div>
+            <div class="sub-card-out">→ <span>review-code-conv.md</span></div>
+            <div class="rules-tag" style="font-size:8px;padding:1px 5px;">⚙ RULES_REVIEWER_CONVENTION</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARROW DOWN -->
+  <div class="arrow-center">
+    <div class="arrow-down">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:var(--green);letter-spacing:0.1em;margin-bottom:2px;">PASS</div>
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+    </div>
+  </div>
+
+  <!-- ── STAGE 7: PR ── -->
+  <div style="max-width:960px;margin:0 auto;width:100%;">
+    <div class="stage-card color-teal">
+      <div class="stage-header">
+        <div class="stage-num num-teal">STAGE 7</div>
+        <div class="stage-name">PR 작성 <span class="stage-name-en">pr</span></div>
+        <div class="agent-badge ab-teal">PR Writer Agent</div>
+      </div>
+      <div class="stage-desc">
+        GitLab MR 설명 문서를 작성합니다. 구현 범위(마크업·BE 상태), 구현된 티켓 목록,
+        미구현 티켓(다음 MR 예정), 변경 파일, 테스트 방법을 포함합니다.
+      </div>
+      <div class="io-row">
+        <div class="io-col">
+          <div class="io-label">INPUT</div>
+          <div class="artifact"><div class="dot"></div>plan.md + tickets.md</div>
+          <div class="artifact"><div class="dot"></div>changed-files.md</div>
+        </div>
+        <div class="io-arrow">→</div>
+        <div class="io-col">
+          <div class="io-label">OUTPUT</div>
+          <div class="artifact out"><div class="dot"></div>pr.md (GitLab MR 설명)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARROW DOWN -->
+  <div class="arrow-center">
+    <div class="arrow-down">
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+    </div>
+  </div>
+
+  <!-- ── STAGE 8: QA ── -->
+  <div style="max-width:960px;margin:0 auto;width:100%;">
+    <div class="stage-card color-amber">
+      <div class="stage-header">
+        <div class="stage-num num-amber">STAGE 8</div>
+        <div class="stage-name">QA 체크리스트 <span class="stage-name-en">qa</span></div>
+        <div class="agent-badge ab-amber">QA Agent</div>
+      </div>
+      <div class="stage-desc">
+        외주 QA팀 전달용 시나리오(qa.md)를 작성하고, Playwright 자동 테스트를 실행합니다.
+        구현 범위 기준으로 정상·조건부·에러 케이스를 작성하며, 보류 기능은 "⏸ 미구현" 표시.
+        QA 환경: <code style="font-family:monospace;color:var(--amber)">https://dev.groupware.autoever.com</code> (PC Chrome + Mobile Safari)
+      </div>
+      <div class="io-row">
+        <div class="io-col">
+          <div class="io-label">INPUT</div>
+          <div class="artifact"><div class="dot"></div>_context.md (QA 기준)</div>
+          <div class="artifact"><div class="dot"></div>plan.md + changed-files.md</div>
+          <div class="artifact"><div class="dot"></div>pending-tickets.md</div>
+        </div>
+        <div class="io-arrow">→</div>
+        <div class="io-col">
+          <div class="io-label">OUTPUT</div>
+          <div class="artifact out"><div class="dot"></div>qa.md (QA 시나리오)</div>
+          <div class="artifact out"><div class="dot"></div>Playwright 테스트 결과</div>
+        </div>
+      </div>
+      <div style="margin-top:10px;">
+        <div class="rules-tag">⚙ RULES_QA — PC Chrome + Mobile Safari 양쪽 검증</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAIR ARROW + retry -->
+  <div class="pair-wrapper" style="min-height:80px;">
+    <div></div>
+    <div class="pair-arrow-col">
+      <div class="pa-line"></div>
+      <div class="pa-head"></div>
+      <div class="pa-label">검수</div>
+      <div class="pa-line"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:8px;padding-left:8px;">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--red);margin-bottom:4px;">FAIL → qa 재작성 (최대 3회)</div>
+      <div style="height:1px;width:140px;background:rgba(255,82,82,0.3);"></div>
+    </div>
+  </div>
+
+  <!-- ── STAGE 9: QA-REVIEW ── -->
+  <div style="max-width:960px;margin:0 auto;width:100%;">
+    <div class="stage-card review color-amber">
+      <div class="stage-header">
+        <div class="stage-num num-amber">STAGE 9</div>
+        <div class="stage-name">QA 검수 <span class="stage-name-en">qa-review</span></div>
+        <div class="agent-badge ab-amber">Reviewer Agent</div>
+        <span class="pass-badge">PASS →</span>
+        <span class="fail-badge">FAIL ↩</span>
+      </div>
+      <div class="stage-desc">
+        기획서와 qa.md를 대조하여 모든 기능·화면·조건부 케이스·팝업/모달·에러 케이스가 시나리오로 존재하는지 검수합니다.
+      </div>
+      <div class="io-row">
+        <div class="io-col">
+          <div class="io-label">INPUT</div>
+          <div class="artifact"><div class="dot"></div>_context.md (기준)</div>
+          <div class="artifact"><div class="dot"></div>plan.md + qa.md (검수 대상)</div>
+        </div>
+        <div class="io-arrow">→</div>
+        <div class="io-col">
+          <div class="io-label">OUTPUT</div>
+          <div class="artifact out"><div class="dot"></div>review-qa.md (PASS/FAIL)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINAL ARROW -->
+  <div class="arrow-center">
+    <div class="arrow-down">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:var(--green);letter-spacing:0.1em;margin-bottom:2px;">PASS · 완료</div>
+      <div class="arrow-line"></div>
+      <div class="arrow-head"></div>
+    </div>
+  </div>
+
+  <!-- ── FINAL OUTPUTS ── -->
+  <div style="max-width:960px;margin:0 auto;width:100%;">
+    <div class="outputs-section">
+      <div class="section-label">최종 산출물</div>
+      <div class="outputs-grid">
+        <div class="output-card">
+          <div class="oc-name">plan.md</div>
+          <div class="oc-desc">FE 작업 계획서 (PC/Mobile 전체 명세)</div>
+        </div>
+        <div class="output-card">
+          <div class="oc-name">tickets.md</div>
+          <div class="oc-desc">Jira 티켓 목록 (FE- prefix, 공수 포함)</div>
+        </div>
+        <div class="output-card">
+          <div class="oc-name">Git Commit</div>
+          <div class="oc-desc">feat: {요약} — worktree에서 브랜치 커밋</div>
+        </div>
+        <div class="output-card">
+          <div class="oc-name">changed-files.md</div>
+          <div class="oc-desc">변경 파일 목록 + TODO/FIXME 목록</div>
+        </div>
+        <div class="output-card">
+          <div class="oc-name">pr.md</div>
+          <div class="oc-desc">GitLab MR 설명 (복붙 가능)</div>
+        </div>
+        <div class="output-card">
+          <div class="oc-name">qa.md</div>
+          <div class="oc-desc">외주 QA팀 전달용 시나리오</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /pipeline -->
+
+<div class="section-divider"></div>
+
+<!-- ── SPECIAL RULES PANEL ── -->
+<div class="rules-panel">
+  <div class="rules-panel-title">⚙ GROUPWARE 프로젝트 특화 규칙 (special.md 주입)</div>
+  <div class="rules-grid">
+    <div class="rule-item">
+      <div class="rule-item-name">PLANNER</div>
+      <div class="rule-item-content">
+        PC/Mobile 두 플랫폼 모두 고려<br>
+        assemble-fe 모노레포 구조 숙지<br>
+        (apps/groupware, packages/shared)<br>
+        기획서 무관 PC/Mobile 양쪽 계획 포함
+      </div>
+    </div>
+    <div class="rule-item">
+      <div class="rule-item-name">DEVELOPER</div>
+      <div class="rule-item-content">
+        packages/shared 공통 훅/컴포넌트 우선<br>
+        API preset: apps/groupware/src/api/ 패턴<br>
+        <strong style="color:var(--red)">Emotion CSS-in-JS 사용 · Tailwind 금지</strong>
+      </div>
+    </div>
+    <div class="rule-item">
+      <div class="rule-item-name">TICKET</div>
+      <div class="rule-item-content">
+        티켓 prefix: FE-<br>
+        PC·Mobile 페이지 적용은 별도 티켓<br>
+        Admin(BO) 화면 포함 시 별도 티켓
+      </div>
+    </div>
+    <div class="rule-item">
+      <div class="rule-item-name">REVIEWER_AC</div>
+      <div class="rule-item-content">
+        권한(role)별 동작 차이 반드시 확인<br>
+        PC/Mobile 양쪽 모두 구현 확인
+      </div>
+    </div>
+    <div class="rule-item">
+      <div class="rule-item-name">REVIEWER_ARCH</div>
+      <div class="rule-item-content">
+        assemble-fe 아키텍처 패턴 준수<br>
+        공유 컴포넌트 → packages/shared 위치 확인
+      </div>
+    </div>
+    <div class="rule-item">
+      <div class="rule-item-name">REVIEWER_CONVENTION</div>
+      <div class="rule-item-content">
+        ESLint/Prettier 준수 확인<br>
+        Emotion 사용 패턴이 기존 코드와 일치 확인
+      </div>
+    </div>
+    <div class="rule-item">
+      <div class="rule-item-name">QA</div>
+      <div class="rule-item-content">
+        QA 환경: dev.groupware.autoever.com<br>
+        PC Chrome + Mobile Safari 양쪽 검증
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── FOOTER ── -->
+<div class="footer">
+  FE1 HARNESS · groupware/신규스펙개발 · .claude/commands/generic/신규스펙개발/ + projects/groupware/신규스펙개발/special.md
+</div>
+
+</body>
+</html>
