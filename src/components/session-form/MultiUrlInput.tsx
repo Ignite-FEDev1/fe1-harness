@@ -33,7 +33,7 @@ export function MultiUrlInput({
     <div>
       <label
         className="block text-xs font-medium mb-1.5"
-        style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.04em' }}
+        style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: '12px', letterSpacing: '0.04em' }}
       >
         {label}
       </label>
@@ -52,7 +52,7 @@ export function MultiUrlInput({
           className="px-3 py-1.5 text-xs font-medium rounded transition-all"
           style={{
             fontFamily: 'var(--font-mono)',
-            fontSize: '10px',
+            fontSize: '12px',
             background: 'var(--bg-surface)',
             color: 'var(--text-secondary)',
             border: '1px solid var(--border-base)',
@@ -71,7 +71,7 @@ export function MultiUrlInput({
                 background: 'var(--bg-base)',
                 border: '1px solid var(--border-dim)',
                 fontFamily: 'var(--font-mono)',
-                fontSize: '10px',
+                fontSize: '12px',
                 color: 'var(--text-secondary)',
               }}
             >
@@ -80,7 +80,7 @@ export function MultiUrlInput({
                 type="button"
                 onClick={() => removeUrl(i)}
                 className="transition-colors"
-                style={{ color: 'var(--text-ghost)' }}
+                style={{ color: 'var(--text-muted)' }}
               >
                 x
               </button>

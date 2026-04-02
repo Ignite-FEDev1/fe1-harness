@@ -22,9 +22,9 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
     <h2
       className="text-xs font-semibold tracking-widest mb-4 pb-2"
       style={{
-        color: 'var(--text-ghost)',
+        color: 'var(--text-muted)',
         fontFamily: 'var(--font-mono)',
-        fontSize: '10px',
+        fontSize: '12px',
         borderBottom: '1px solid var(--border-dim)',
       }}
     >
@@ -85,11 +85,11 @@ function TokenRow({
       <div className="w-56 flex-shrink-0">
         <div
           className="text-xs"
-          style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-secondary)' }}
+          style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-secondary)' }}
         >
           {tokenKey}
         </div>
-        <div className="text-xs mt-0.5" style={{ color: 'var(--text-ghost)', fontSize: '10px' }}>
+        <div className="text-xs mt-0.5" style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
           {info.label}
         </div>
       </div>
@@ -103,7 +103,7 @@ function TokenRow({
               value={value}
               onChange={(e) => setValue(e.target.value)}
               className="input-field input-mono flex-1"
-              style={{ fontSize: '11px', padding: '4px 8px' }}
+              style={{ fontSize: '12px', padding: '4px 8px' }}
               autoFocus
             />
             <button
@@ -112,7 +112,7 @@ function TokenRow({
               className="px-3 py-1 text-xs font-semibold rounded disabled:opacity-30"
               style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: '9px',
+                fontSize: '12px',
                 background: 'var(--accent-green)',
                 color: 'var(--bg-void)',
               }}
@@ -124,8 +124,8 @@ function TokenRow({
               className="px-2 py-1 text-xs rounded"
               style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: '9px',
-                color: 'var(--text-ghost)',
+                fontSize: '12px',
+                color: 'var(--text-muted)',
                 border: '1px solid var(--border-dim)',
               }}
             >
@@ -138,7 +138,7 @@ function TokenRow({
               className="text-xs truncate"
               style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: '11px',
+                fontSize: '12px',
                 color: info.masked ? 'var(--accent-green-dim)' : 'var(--accent-red)',
               }}
             >
@@ -155,8 +155,8 @@ function TokenRow({
           className="px-2 py-1 text-xs rounded flex-shrink-0 transition-colors"
           style={{
             fontFamily: 'var(--font-mono)',
-            fontSize: '9px',
-            color: 'var(--text-ghost)',
+            fontSize: '12px',
+            color: 'var(--text-muted)',
             border: '1px solid var(--border-dim)',
           }}
         >
@@ -227,7 +227,7 @@ function ProjectPathRow({
               onChange={(e) => setValue(e.target.value)}
               placeholder="/Users/yourname/projects/..."
               className="input-field input-mono flex-1"
-              style={{ fontSize: '11px', padding: '4px 8px' }}
+              style={{ fontSize: '12px', padding: '4px 8px' }}
               autoFocus
             />
             <button
@@ -236,7 +236,7 @@ function ProjectPathRow({
               className="px-3 py-1 text-xs font-semibold rounded disabled:opacity-30"
               style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: '9px',
+                fontSize: '12px',
                 background: 'var(--accent-green)',
                 color: 'var(--bg-void)',
               }}
@@ -246,7 +246,7 @@ function ProjectPathRow({
             <button
               onClick={() => { setEditing(false); setValue(currentPath); }}
               className="px-2 py-1 text-xs rounded"
-              style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--text-ghost)', border: '1px solid var(--border-dim)' }}
+              style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)', border: '1px solid var(--border-dim)' }}
             >
               ESC
             </button>
@@ -256,7 +256,7 @@ function ProjectPathRow({
             className="text-xs"
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: '11px',
+              fontSize: '12px',
               color: currentPath ? 'var(--text-secondary)' : 'var(--accent-red)',
             }}
           >
@@ -269,11 +269,147 @@ function ProjectPathRow({
         <button
           onClick={() => setEditing(true)}
           className="px-2 py-1 text-xs rounded flex-shrink-0"
-          style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--text-ghost)', border: '1px solid var(--border-dim)' }}
+          style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)', border: '1px solid var(--border-dim)' }}
         >
           EDIT
         </button>
       )}
+    </div>
+  );
+}
+
+// --- Project Registry Row (editable) ---
+function ProjectRow({
+  project,
+  onUpdated,
+  onDeleted,
+}: {
+  project: Project;
+  onUpdated: (updated: Project) => void;
+  onDeleted: (id: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [values, setValues] = useState({ name: project.name, repo_url: project.repo_url ?? '', description: project.description ?? '' });
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/projects/${project.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        onUpdated(updated);
+        setEditing(false);
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm(`'${project.name}' 프로젝트를 삭제하시겠습니까?`)) return;
+    await fetch(`/api/projects/${project.id}`, { method: 'DELETE' });
+    onDeleted(project.id);
+  };
+
+  const handleCancel = () => {
+    setValues({ name: project.name, repo_url: project.repo_url ?? '', description: project.description ?? '' });
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div
+        className="flex flex-col gap-2 px-4 py-3 rounded"
+        style={{ background: 'var(--bg-raised)', border: '1px solid var(--accent-green-dim)' }}
+      >
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={values.name}
+            onChange={(e) => setValues((v) => ({ ...v, name: e.target.value }))}
+            placeholder="프로젝트 이름 *"
+            className="input-field flex-1"
+            style={{ fontSize: '12px', padding: '4px 8px' }}
+            autoFocus
+          />
+          <input
+            type="text"
+            value={values.repo_url}
+            onChange={(e) => setValues((v) => ({ ...v, repo_url: e.target.value }))}
+            placeholder="GitLab URL"
+            className="input-field input-mono flex-1"
+            style={{ fontSize: '12px', padding: '4px 8px' }}
+          />
+          <input
+            type="text"
+            value={values.description}
+            onChange={(e) => setValues((v) => ({ ...v, description: e.target.value }))}
+            placeholder="설명"
+            className="input-field flex-1"
+            style={{ fontSize: '12px', padding: '4px 8px' }}
+          />
+        </div>
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={handleCancel}
+            className="px-2 py-1 text-xs rounded"
+            style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)', border: '1px solid var(--border-dim)' }}
+          >
+            ESC
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving || !values.name.trim()}
+            className="px-3 py-1 text-xs font-semibold rounded disabled:opacity-30"
+            style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', background: 'var(--accent-green)', color: 'var(--bg-void)' }}
+          >
+            {saving ? '...' : 'SAVE'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="flex items-center justify-between px-4 py-2.5 rounded group"
+      style={{ background: 'var(--bg-raised)', border: '1px solid var(--border-dim)' }}
+    >
+      <div className="flex items-center gap-3 min-w-0">
+        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: 'var(--accent-cyan)' }} />
+        <span className="text-sm flex-shrink-0" style={{ color: 'var(--text-bright)' }}>{project.name}</span>
+        {project.repo_url && (
+          <span className="text-xs truncate" style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>
+            {project.repo_url}
+          </span>
+        )}
+        {project.description && (
+          <span className="text-xs truncate" style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+            {project.description}
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={() => setEditing(true)}
+          className="px-2 py-1 text-xs rounded"
+          style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)', border: '1px solid var(--border-dim)' }}
+        >
+          EDIT
+        </button>
+        <button
+          onClick={handleDelete}
+          className="px-2 py-1 text-xs rounded"
+          style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--accent-red)', border: '1px solid var(--accent-red)', opacity: 0.6 }}
+        >
+          DEL
+        </button>
+      </div>
     </div>
   );
 }
@@ -346,7 +482,7 @@ export default function AdminPage() {
           </p>
 
           {usersLoading ? (
-            <div className="text-xs" style={{ color: 'var(--text-ghost)', fontFamily: 'var(--font-mono)' }}>LOADING...</div>
+            <div className="text-xs" style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>LOADING...</div>
           ) : (
             <div className="grid grid-cols-2 gap-2">
               {users.map((user) => {
@@ -370,7 +506,7 @@ export default function AdminPage() {
                       style={{
                         fontFamily: 'var(--font-mono)',
                         background: isSelected ? 'var(--accent-green)' : 'var(--bg-surface)',
-                        color: isSelected ? 'var(--bg-void)' : 'var(--text-ghost)',
+                        color: isSelected ? 'var(--bg-void)' : 'var(--text-muted)',
                         border: isSelected ? 'none' : '1px solid var(--border-base)',
                       }}
                     >
@@ -381,11 +517,11 @@ export default function AdminPage() {
                         {user.name}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs" style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: tokenCount === totalTokens ? 'var(--accent-green-dim)' : 'var(--accent-amber-dim)' }}>
+                        <span className="text-xs" style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: tokenCount === totalTokens ? 'var(--accent-green-dim)' : 'var(--accent-amber-dim)' }}>
                           {tokenCount}/{totalTokens} TOKENS
                         </span>
                         {isSelected && (
-                          <span className="text-xs" style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--accent-green)' }}>ACTIVE</span>
+                          <span className="text-xs" style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--accent-green)' }}>ACTIVE</span>
                         )}
                       </div>
                     </div>
@@ -398,7 +534,7 @@ export default function AdminPage() {
           {!usersLoading && !selectedUser && (
             <div
               className="mt-3 px-4 py-2.5 rounded text-xs"
-              style={{ background: 'var(--accent-amber-glow)', border: '1px solid var(--accent-amber-dim)', color: 'var(--accent-amber)', fontFamily: 'var(--font-mono)', fontSize: '11px' }}
+              style={{ background: 'var(--accent-amber-glow)', border: '1px solid var(--accent-amber-dim)', color: 'var(--accent-amber)', fontFamily: 'var(--font-mono)', fontSize: '12px' }}
             >
               NO OPERATOR SELECTED
             </div>
@@ -466,7 +602,7 @@ export default function AdminPage() {
               type="submit"
               disabled={saving}
               className="px-4 py-1.5 text-xs font-semibold rounded disabled:opacity-30 flex-shrink-0"
-              style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', background: 'var(--accent-green)', color: 'var(--bg-void)' }}
+              style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', background: 'var(--accent-green)', color: 'var(--bg-void)' }}
             >
               ADD
             </button>
@@ -474,24 +610,15 @@ export default function AdminPage() {
 
           <div className="space-y-1">
             {projects.map((p) => (
-              <div
+              <ProjectRow
                 key={p.id}
-                className="flex items-center justify-between px-4 py-2.5 rounded"
-                style={{ background: 'var(--bg-raised)', border: '1px solid var(--border-dim)' }}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--accent-cyan)' }} />
-                  <span className="text-sm" style={{ color: 'var(--text-bright)' }}>{p.name}</span>
-                  {p.repo_url && (
-                    <span className="text-xs" style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--text-ghost)' }}>
-                      {p.repo_url}
-                    </span>
-                  )}
-                </div>
-              </div>
+                project={p}
+                onUpdated={(updated) => setProjects((prev) => prev.map((x) => x.id === updated.id ? updated : x))}
+                onDeleted={(id) => setProjects((prev) => prev.filter((x) => x.id !== id))}
+              />
             ))}
             {projects.length === 0 && (
-              <p className="text-xs py-4 text-center" style={{ color: 'var(--text-ghost)', fontFamily: 'var(--font-mono)' }}>
+              <p className="text-xs py-4 text-center" style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                 NO PROJECTS REGISTERED
               </p>
             )}

@@ -31,9 +31,9 @@ export function LogEntry({ content, timestamp }: LogEntryProps) {
     prefixColor = 'var(--accent-cyan)';
   }
   if (isToolResult) {
-    textColor = 'var(--text-ghost)';
+    textColor = 'var(--text-muted)';
     prefix = 'RES';
-    prefixColor = 'var(--text-ghost)';
+    prefixColor = 'var(--text-muted)';
   }
   if (isComplete) {
     textColor = 'var(--accent-green)';
@@ -67,7 +67,7 @@ export function LogEntry({ content, timestamp }: LogEntryProps) {
           background: 'rgba(245,158,11,0.08)',
           border: '1px solid rgba(245,158,11,0.25)',
           fontFamily: 'var(--font-mono)',
-          fontSize: '10px',
+          fontSize: '12px',
           color: 'var(--accent-amber, #f59e0b)',
         }}
       >
@@ -81,7 +81,7 @@ export function LogEntry({ content, timestamp }: LogEntryProps) {
       {/* Timestamp */}
       <span
         className="flex-shrink-0 select-none w-16 text-right pr-3 opacity-0 group-hover:opacity-100 transition-opacity"
-        style={{ color: 'var(--text-ghost)', fontSize: '10px' }}
+        style={{ color: 'var(--text-muted)', fontSize: '12px' }}
       >
         {time}
       </span>
@@ -90,7 +90,7 @@ export function LogEntry({ content, timestamp }: LogEntryProps) {
       {prefix && (
         <span
           className="flex-shrink-0 w-11 text-right pr-2 select-none"
-          style={{ color: prefixColor, fontSize: '9px', fontWeight: 600, letterSpacing: '0.04em', lineHeight: '1.7', opacity: 0.7 }}
+          style={{ color: prefixColor, fontSize: '12px', fontWeight: 600, letterSpacing: '0.04em', lineHeight: '1.7', opacity: 0.7 }}
         >
           {prefix}
         </span>

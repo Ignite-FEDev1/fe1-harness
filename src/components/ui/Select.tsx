@@ -27,8 +27,8 @@ export function Select({ value, onChange, options, placeholder = '선택', disab
           width: '100%',
           padding: '6px 10px',
           fontFamily: 'var(--font-mono)',
-          fontSize: '11px',
-          color: value ? 'var(--text-primary)' : 'var(--text-ghost)',
+          fontSize: '12px',
+          color: value ? 'var(--text-primary)' : 'var(--text-muted)',
           background: 'var(--bg-void)',
           border: '1px solid var(--border-base)',
           borderRadius: '4px',
@@ -59,7 +59,7 @@ export function Select({ value, onChange, options, placeholder = '선택', disab
             boxShadow: '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)',
           }}
         >
-          <RadixSelect.ScrollUpButton style={{ display: 'flex', justifyContent: 'center', padding: '4px', color: 'var(--text-ghost)' }}>
+          <RadixSelect.ScrollUpButton style={{ display: 'flex', justifyContent: 'center', padding: '4px', color: 'var(--text-muted)' }}>
             <UpIcon />
           </RadixSelect.ScrollUpButton>
 
@@ -74,7 +74,7 @@ export function Select({ value, onChange, options, placeholder = '선택', disab
                   justifyContent: 'space-between',
                   padding: '7px 10px',
                   fontFamily: 'var(--font-mono)',
-                  fontSize: '11px',
+                  fontSize: '12px',
                   color: 'var(--text-primary)',
                   borderRadius: '4px',
                   outline: 'none',
@@ -95,7 +95,7 @@ export function Select({ value, onChange, options, placeholder = '선택', disab
             ))}
           </RadixSelect.Viewport>
 
-          <RadixSelect.ScrollDownButton style={{ display: 'flex', justifyContent: 'center', padding: '4px', color: 'var(--text-ghost)' }}>
+          <RadixSelect.ScrollDownButton style={{ display: 'flex', justifyContent: 'center', padding: '4px', color: 'var(--text-muted)' }}>
             <DownIcon />
           </RadixSelect.ScrollDownButton>
         </RadixSelect.Content>
@@ -107,7 +107,7 @@ export function Select({ value, onChange, options, placeholder = '선택', disab
 function ChevronIcon() {
   return (
     <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
-      <path d="M1 1l4 4 4-4" stroke="var(--text-ghost)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M1 1l4 4 4-4" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

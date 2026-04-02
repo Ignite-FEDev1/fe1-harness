@@ -2,7 +2,8 @@ import fs from 'fs';
 import path from 'path';
 
 export interface SessionFormData {
-  project_path: string;
+  project_path?: string;
+  generic_pipeline?: string;
   project_slug?: string;
   task_type?: string;
   confluence_urls?: string[];
@@ -41,7 +42,8 @@ function formatMultiline(text: string | undefined): string {
 export function generateSessionMd(data: SessionFormData): string {
   const lines: string[] = [];
 
-  lines.push(`project_path: ${data.project_path}`);
+  if (data.project_path) lines.push(`project_path: ${data.project_path}`);
+  if (data.generic_pipeline) lines.push(`generic_pipeline: ${data.generic_pipeline}`);
   if (data.project_slug) lines.push(`project_slug: ${data.project_slug}`);
   if (data.task_type) lines.push(`task_type: ${data.task_type}`);
 

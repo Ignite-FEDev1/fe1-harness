@@ -13,6 +13,7 @@ interface Session {
   current_step: number | null;
   form_data: Record<string, unknown>;
   projects?: { name: string; project_path: string } | null;
+  active_stage_id?: string | null;
 }
 
 export default function SessionDetailPage({
@@ -34,30 +35,83 @@ export default function SessionDetailPage({
       .finally(() => setLoading(false));
   }, [id]);
 
-  // Fetch pipeline config to get enabled stages
+  // Fetch pipeline stages
   useEffect(() => {
     if (!session) return;
     const formData = session.form_data;
+
+    const INIT_STAGE: PipelineStage = { id: 'init', label: '작업 준비' };
+
+    // Case 1: generic_pipeline directly on session (no project config needed)
+    const directGeneric = formData.generic_pipeline as string | undefined;
+    if (directGeneric) {
+      fetch(`/api/pipelines/generic/${encodeURIComponent(directGeneric)}`)
+        .then((r) => r.json())
+        .then((pData) => {
+          if (Array.isArray(pData.stages) && pData.stages.length > 0) {
+            setStages([
+              INIT_STAGE,
+              ...(pData.stages as { id: string; label?: string; parallelGroup?: string }[]).map((s) => ({
+                id: s.id,
+                label: s.label ?? STAGE_LABELS[s.id] ?? s.id,
+                parallelGroup: s.parallelGroup,
+              })),
+            ]);
+          } else {
+            setStages([INIT_STAGE]);
+          }
+        })
+        .catch(() => {});
+      return;
+    }
+
+    // Case 2: project-based config (project_slug + task_type)
     const slug = formData.project_slug as string | undefined;
     const taskType = formData.task_type as string | undefined;
-    if (!slug || !taskType) return;
+    if (!slug || !taskType) {
+      setStages([INIT_STAGE]);
+      return;
+    }
 
-    fetch(
-      `/api/pipelines/projects/${encodeURIComponent(slug)}/${encodeURIComponent(taskType)}`,
-    )
+    fetch(`/api/pipelines/projects/${encodeURIComponent(slug)}/${encodeURIComponent(taskType)}`)
       .then((r) => r.json())
-      .then((data) => {
+      .then(async (data) => {
         const config = data?.config;
         if (!config?.stages) return;
-        const enabledStages: PipelineStage[] = (
-          config.stages as { id: string; enabled: boolean }[]
-        )
-          .filter((s) => s.enabled)
-          .map((s) => ({
-            id: s.id,
-            label: STAGE_LABELS[s.id] ?? s.id,
-          }));
-        setStages(enabledStages);
+
+        // If config references a generic pipeline, load stages from pipeline.json
+        const genericPipeline = config.genericPipeline as string | undefined;
+        if (genericPipeline) {
+          try {
+            const pRes = await fetch(`/api/pipelines/generic/${encodeURIComponent(genericPipeline)}`);
+            const pData = await pRes.json();
+            if (Array.isArray(pData.stages) && pData.stages.length > 0) {
+              const enabledSet = new Set(
+                (config.stages as { id: string; enabled: boolean }[])
+                  .filter((s) => s.enabled)
+                  .map((s) => s.id),
+              );
+              const projectIds = new Set((config.stages as { id: string }[]).map((s) => s.id));
+              const hasCustomIds = pData.stages.some((s: { id: string }) => !projectIds.has(s.id));
+              setStages([
+                INIT_STAGE,
+                ...(pData.stages as { id: string; label?: string; parallelGroup?: string }[])
+                  .filter((s) => hasCustomIds || enabledSet.has(s.id))
+                  .map((s) => ({ id: s.id, label: s.label ?? STAGE_LABELS[s.id] ?? s.id, parallelGroup: s.parallelGroup })),
+              ]);
+              return;
+            }
+          } catch {
+            // fall through
+          }
+        }
+
+        setStages([
+          INIT_STAGE,
+          ...(config.stages as { id: string; enabled: boolean }[])
+            .filter((s) => s.enabled)
+            .map((s) => ({ id: s.id, label: STAGE_LABELS[s.id] ?? s.id })),
+        ]);
       })
       .catch(() => {});
   }, [session]);
@@ -85,7 +139,7 @@ export default function SessionDetailPage({
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <span className="text-xs" style={{ color: 'var(--text-ghost)', fontFamily: 'var(--font-mono)' }}>
+        <span className="text-xs" style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
           LOADING...
         </span>
       </div>
@@ -117,7 +171,7 @@ export default function SessionDetailPage({
             className="text-xs px-2 py-0.5 rounded"
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: '10px',
+              fontSize: '12px',
               color: 'var(--text-muted)',
               background: 'var(--bg-surface)',
               border: '1px solid var(--border-dim)',
@@ -131,8 +185,8 @@ export default function SessionDetailPage({
             className="text-xs px-2 py-0.5 rounded"
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: '10px',
-              color: 'var(--text-ghost)',
+              fontSize: '12px',
+              color: 'var(--text-muted)',
               background: 'var(--bg-surface)',
               border: '1px solid var(--border-dim)',
             }}
@@ -149,6 +203,7 @@ export default function SessionDetailPage({
           onRun={handleRun}
           sessionStatus={session.status}
           stages={stages}
+          initialStageId={session.active_stage_id}
         />
       </div>
     </div>

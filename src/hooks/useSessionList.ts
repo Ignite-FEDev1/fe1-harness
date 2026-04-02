@@ -32,9 +32,17 @@ export function useSessionList() {
 
   useEffect(() => {
     fetchSessions();
+  }, [fetchSessions]);
+
+  // Poll only when there are active (running/paused) sessions
+  useEffect(() => {
+    const hasActive = sessions.some(
+      (s) => s.status === 'running' || s.status === 'paused',
+    );
+    if (!hasActive) return;
     const interval = setInterval(fetchSessions, 5000);
     return () => clearInterval(interval);
-  }, [fetchSessions]);
+  }, [sessions, fetchSessions]);
 
   return { sessions, loading, refresh: fetchSessions };
 }

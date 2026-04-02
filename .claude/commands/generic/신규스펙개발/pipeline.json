@@ -1,0 +1,28 @@
+{
+  "stages": [
+    {
+      "id": "plan"
+    },
+    {
+      "id": "plan-review"
+    },
+    {
+      "id": "ticket"
+    },
+    {
+      "id": "ticket-review"
+    },
+    {
+      "id": "develop"
+    },
+    {
+      "id": "develop-review"
+    },
+    {
+      "id": "qa"
+    },
+    {
+      "id": "pr"
+    }
+  ]
+}

@@ -31,7 +31,7 @@ export function BranchSelector({ gitlabProjectId, value, onChange }: BranchSelec
     <div>
       <label
         className="block text-xs font-medium mb-1.5"
-        style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.04em' }}
+        style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: '12px', letterSpacing: '0.04em' }}
       >
         BRANCH
       </label>

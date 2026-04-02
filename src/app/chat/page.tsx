@@ -182,10 +182,10 @@ export default function ChatPage() {
         {messages.length === 0 && (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <div className="text-xs mb-2" style={{ color: 'var(--text-ghost)', fontFamily: 'var(--font-mono)' }}>
+              <div className="text-xs mb-2" style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                 API 연결 테스트 및 자유 대화
               </div>
-              <div className="text-xs" style={{ color: 'var(--text-ghost)' }}>
+              <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
                 메시지를 입력하면 선택된 사용자의 API 키로 Claude에 전송됩니다
               </div>
             </div>
@@ -221,8 +221,8 @@ export default function ChatPage() {
                     className="text-xs mb-1 font-semibold"
                     style={{
                       fontFamily: 'var(--font-mono)',
-                      fontSize: '9px',
-                      color: msg.role === 'system' ? 'var(--accent-red)' : 'var(--text-ghost)',
+                      fontSize: '12px',
+                      color: msg.role === 'system' ? 'var(--accent-red)' : 'var(--text-muted)',
                     }}
                   >
                     {msg.role === 'system' ? 'SYSTEM' : 'CLAUDE'}
@@ -275,7 +275,7 @@ export default function ChatPage() {
             className="px-5 py-2 text-xs font-semibold rounded disabled:opacity-30"
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: '11px',
+              fontSize: '12px',
               background: 'var(--accent-green)',
               color: 'var(--bg-void)',
             }}

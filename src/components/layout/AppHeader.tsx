@@ -67,7 +67,7 @@ export function AppHeader() {
             border: '1px solid rgba(0,230,118,0.25)',
             borderRadius: '3px',
             fontFamily: 'var(--font-mono)',
-            fontSize: '9px',
+            fontSize: '12px',
             fontWeight: 600,
             letterSpacing: '0.12em',
             padding: '2px 6px',
@@ -99,7 +99,7 @@ export function AppHeader() {
                 onClick={() => setApiMode(mode)}
                 style={{
                   fontFamily: 'var(--font-mono)',
-                  fontSize: '10px',
+                  fontSize: '12px',
                   fontWeight: active ? 700 : 500,
                   letterSpacing: '0.08em',
                   padding: '5px 11px',
@@ -139,7 +139,7 @@ export function AppHeader() {
               href={href}
               style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: '11px',
+                fontSize: '12px',
                 fontWeight: isActive ? 700 : 500,
                 letterSpacing: '0.07em',
                 padding: '5px 12px',
@@ -175,7 +175,7 @@ export function AppHeader() {
               className="flex items-center gap-1.5"
               style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: '11px',
+                fontSize: '12px',
                 fontWeight: 500,
                 color: 'var(--text-primary)',
                 background: 'rgba(255,255,255,0.04)',
@@ -201,7 +201,7 @@ export function AppHeader() {
             <span
               style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: '10px',
+                fontSize: '12px',
                 fontWeight: 600,
                 letterSpacing: '0.06em',
                 color: '#ffab00',

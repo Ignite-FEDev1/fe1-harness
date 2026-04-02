@@ -21,9 +21,9 @@ export async function POST(request: Request) {
 
   const { name, project_id, form_data } = body;
 
-  if (!name || !project_id) {
+  if (!name) {
     return NextResponse.json(
-      { error: 'name and project_id are required' },
+      { error: 'name is required' },
       { status: 400 },
     );
   }
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     .from('sessions')
     .insert({
       name,
-      project_id,
+      project_id: project_id ?? null,
       form_data: form_data ?? {},
       status: 'idle',
     })

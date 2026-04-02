@@ -144,7 +144,7 @@ button:disabled {
 }
 
 .input-field::placeholder {
-  color: var(--text-ghost);
+  color: var(--text-muted);
 }
 
 .input-field:focus {

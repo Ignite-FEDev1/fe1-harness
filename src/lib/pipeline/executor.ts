@@ -6,7 +6,7 @@ import { setActiveQuery, removeActiveQuery, isSessionStopped, clearStopFlag } fr
 import { pipelineEventBus } from './event-bus';
 import {
   parseProgress,
-  parseStageId,
+  parseStageIds,
   detectUserGate,
   detectAbort,
   detectCompletion,
@@ -139,6 +139,8 @@ export async function executePipeline(options: {
   model?: string;
   projectSlug?: string;
   taskType?: string;
+  genericPipeline?: string;
+  notes?: string;
 }) {
   const { sessionId, docsDir, harnessRoot, envVars, model: requestedModel } = options;
   const supabase = createServerClient();
@@ -174,23 +176,27 @@ export async function executePipeline(options: {
   }
   // anthropic mode: ANTHROPIC_API_KEY is already in sdkEnv
 
-  // Determine which orchestrator to use:
-  // - If projectSlug + taskType provided → use new orchestrator.md (dynamic pipeline)
-  // - Otherwise → fall back to legacy pipeline.md
-  const orchestratorPath = (options.projectSlug && options.taskType)
-    ? path.join(harnessRoot, '.claude/commands/orchestrator.md')
-    : path.join(harnessRoot, '.claude/commands/pipeline.md');
+  // Determine prompt:
+  // - If genericPipeline or projectSlug+taskType → orchestrator.md (dynamic pipeline)
+  // - Otherwise → use notes directly as prompt (no pipeline)
+  const useOrchestrator = !!(options.genericPipeline || (options.projectSlug && options.taskType));
 
-  const orchestratorMd = readFileSync(orchestratorPath, 'utf-8');
-
-  // Remove frontmatter (--- ... ---)
-  const frontmatterEnd = orchestratorMd.indexOf('---', orchestratorMd.indexOf('---') + 3);
-  const promptBody =
-    frontmatterEnd !== -1
-      ? orchestratorMd.slice(frontmatterEnd + 3).trim()
-      : orchestratorMd;
-
-  const prompt = promptBody.replace(/\$ARGUMENTS/g, docsDir);
+  let prompt: string;
+  if (useOrchestrator) {
+    const orchestratorMd = readFileSync(
+      path.join(harnessRoot, '.claude/commands/orchestrator.md'),
+      'utf-8',
+    );
+    const frontmatterEnd = orchestratorMd.indexOf('---', orchestratorMd.indexOf('---') + 3);
+    const promptBody =
+      frontmatterEnd !== -1
+        ? orchestratorMd.slice(frontmatterEnd + 3).trim()
+        : orchestratorMd;
+    prompt = promptBody.replace(/\$ARGUMENTS/g, docsDir);
+  } else {
+    // Notes-only mode: run the user's request directly without a pipeline wrapper
+    prompt = options.notes?.trim() ?? '작업 내용이 없습니다.';
+  }
 
   // Update session status to running
   await supabase
@@ -203,6 +209,16 @@ export async function executePipeline(options: {
     content: `[시스템] API 모드: ${{ 'h-chat': 'H-Chat (회사 내부)', 'anthropic': 'Anthropic API', 'claude-max': 'Claude Max (로컬 OAuth)' }[apiMode]}`,
     timestamp: new Date().toISOString(),
   });
+
+  // Immediately highlight "작업 준비" stage — don't wait for orchestrator output
+  if (useOrchestrator) {
+    pipelineEventBus.emit(sessionId, 'progress', { stageId: 'init' });
+    await supabase.from('session_logs').insert({
+      session_id: sessionId,
+      content: JSON.stringify({ stageId: 'init' }),
+      event_type: 'progress',
+    });
+  }
 
   try {
     const q = query({
@@ -274,8 +290,9 @@ export async function executePipeline(options: {
       });
 
       // Check for stage progress markers (new orchestrator: 📍 [stage-id])
-      const stageId = parseStageId(content);
-      if (stageId) {
+      // A single message may contain multiple markers (e.g. init + summary + translate)
+      const stageIds = parseStageIds(content);
+      for (const stageId of stageIds) {
         pipelineEventBus.emit(sessionId, 'progress', { stageId });
         await supabase.from('session_logs').insert({
           session_id: sessionId,

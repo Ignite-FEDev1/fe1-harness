@@ -24,7 +24,7 @@ export function Tooltip({ content, children, side = 'top' }: TooltipProps) {
             zIndex: 9999,
             padding: '5px 10px',
             fontFamily: 'var(--font-mono)',
-            fontSize: '10px',
+            fontSize: '12px',
             color: 'var(--text-primary)',
             background: 'var(--bg-overlay)',
             border: '1px solid var(--border-bright)',

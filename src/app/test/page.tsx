@@ -153,7 +153,7 @@ export default function TestPage() {
                     <div
                       className="w-2 h-2 rounded-full"
                       style={{
-                        background: isRunning ? meta.color : run.status === 'done' ? 'var(--accent-green)' : run.status === 'error' ? 'rgb(239,68,68)' : 'var(--text-ghost)',
+                        background: isRunning ? meta.color : run.status === 'done' ? 'var(--accent-green)' : run.status === 'error' ? 'rgb(239,68,68)' : 'var(--text-muted)',
                         boxShadow: isRunning ? `0 0 6px ${meta.color}` : 'none',
                         animation: isRunning ? 'pulse 1.5s infinite' : 'none',
                       }}
@@ -161,19 +161,19 @@ export default function TestPage() {
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', fontWeight: 700, color: meta.color }}>
                       {meta.label}
                     </span>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--text-ghost)' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>
                       {meta.desc}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-2">
                     {run.status === 'done' && (
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--accent-green)' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--accent-green)' }}>
                         ✅ 통과 {run.turns != null ? `(${run.turns}턴)` : ''} {run.cost != null ? `$${run.cost.toFixed(4)}` : ''}
                       </span>
                     )}
                     {run.status === 'error' && (
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'rgb(239,68,68)' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'rgb(239,68,68)' }}>
                         ❌ 실패
                       </span>
                     )}
@@ -183,7 +183,7 @@ export default function TestPage() {
                       className="px-3 py-1 text-xs rounded disabled:opacity-40 transition-all"
                       style={{
                         fontFamily: 'var(--font-mono)',
-                        fontSize: '10px',
+                        fontSize: '12px',
                         fontWeight: 700,
                         background: isRunning ? 'var(--bg-void)' : meta.color,
                         color: isRunning ? meta.color : 'var(--bg-void)',
@@ -198,10 +198,10 @@ export default function TestPage() {
                 {/* Log output */}
                 <div
                   className="h-48 overflow-y-auto px-4 py-3"
-                  style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', lineHeight: 1.7 }}
+                  style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', lineHeight: 1.7 }}
                 >
                   {run.logs.length === 0 ? (
-                    <span style={{ color: 'var(--text-ghost)' }}>대기 중 — 테스트 실행 버튼을 눌러 시작하세요</span>
+                    <span style={{ color: 'var(--text-muted)' }}>대기 중 — 테스트 실행 버튼을 눌러 시작하세요</span>
                   ) : (
                     run.logs.map((entry, i) => (
                       <div key={i} style={{
@@ -224,7 +224,7 @@ export default function TestPage() {
                     className="px-4 py-2"
                     style={{ borderTop: '1px solid var(--border-dim)', background: 'var(--bg-void)' }}
                   >
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--text-ghost)' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>
                       결과 경로: <span style={{ color: 'var(--accent-green)' }}>{run.outputDir}</span>
                     </span>
                   </div>

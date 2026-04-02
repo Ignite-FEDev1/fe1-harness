@@ -27,7 +27,8 @@ config.json에서 활성화된 단계만 순서대로 실행하고, 각 단계�
 ### 0-A. session.md 읽기
 
 `$ARGUMENTS/session.md`를 읽으세요. 아래 필드를 파악합니다:
-- `project_path`: 작업할 코드베이스 루트 경로
+- `project_path`: 작업할 코드베이스 루트 경로 (없으면 코드 작업 없음)
+- `generic_pipeline`: 직접 지정된 범용 파이프라인 이름 (예: `"테스트2"`)
 - `project_slug`: 프로젝트 슬러그 (예: groupware)
 - `task_type`: 업무유형 슬러그 (예: 신규스펙개발)
 - `confluence_urls`, `api_doc_urls`, `figma_urls`, `figma_notes`
@@ -42,6 +43,13 @@ session.md에 `project_slug`나 `task_type`이 없으면:
 으로 fallback합니다.
 
 ### 0-B. 파이프라인 설정 읽기
+
+**`generic_pipeline`이 session.md에 직접 지정된 경우:**
+- `{GENERIC_PIPELINE}` = session.md의 `generic_pipeline` 값
+- config.json 로딩은 건너뜁니다 (프로젝트별 규칙 없음)
+- STEP 0-B.2로 바로 이동합니다
+
+**`generic_pipeline`이 없는 경우:**
 
 `.claude/commands/projects/{project_slug}/{task_type}/config.json`을 Read 도구로 읽으세요.
 
@@ -62,11 +70,36 @@ session.md에 `project_slug`나 `task_type`이 없으면:
 }
 ```
 
-enabled: true인 단계만 실행합니다. 순서는 config.json의 배열 순서를 따릅니다.
-
-`genericPipeline` 필드도 읽어 `{GENERIC_PIPELINE}` 변수에 저장합니다.
+config.json의 `genericPipeline` 필드도 읽어 `{GENERIC_PIPELINE}` 변수에 저장합니다.
 - 값이 있으면: 해당 값을 사용 (예: `"QA수정"` → `generic/QA수정/`)
 - 값이 없으면: `task_type`을 fallback으로 사용
+
+### 0-B.2 범용 파이프라인 실행 계획 수립
+
+`.claude/commands/generic/{GENERIC_PIPELINE}/pipeline.json`을 Read 도구로 읽으세요.
+
+**pipeline.json이 존재하는 경우 (커스텀 파이프라인):**
+
+pipeline.json의 stages 배열이 실행 순서의 기준이 됩니다.
+
+1. 각 stage의 `id`, `label`, `parallelGroup` 파악
+2. config.json에 해당 stage id가 `enabled: false`로 명시된 경우 → 건너뜀
+3. 연속된 동일 `parallelGroup`을 가진 stages를 **병렬 배치**로 묶어 실행 계획 수립
+
+실행 계획 예시:
+```
+pipeline.json stages: [research, analyze(g1), synthesize(g1), report]
+→ 실행 배치:
+  배치1: [research]              (순차)
+  배치2: [analyze, synthesize]   (병렬, parallelGroup=g1)
+  배치3: [report]                (순차)
+```
+
+이 실행 계획으로 STEP 1+를 진행합니다. 아래의 표준 단계별 규칙보다 **이 계획이 우선**합니다.
+
+**pipeline.json이 없는 경우 (표준 파이프라인):**
+
+config.json의 stages 배열을 그대로 사용하고, enabled: true인 단계만 순서대로 실행합니다. 아래 표준 단계별 규칙을 적용합니다.
 
 ### 0-C. 특수 규칙 로드
 
@@ -110,12 +143,14 @@ enabled: true인 단계만 실행합니다. 순서는 config.json의 배열 순�
 
 초기화 완료 후 출력:
 ```
-📍 [INIT] 파이프라인 초기화 완료
+📍 [init] 파이프라인 초기화 완료
   - 프로젝트: {project_slug} / {task_type}
   - 활성 단계: {enabled 단계 목록, 쉼표 구분}
   - 특수 규칙: {로드됨 / 없음}
   - 코드베이스: {PROJECT_PATH}
 ```
+
+> ⚠️ 마커 출력 규칙: `📍 [...]` 마커는 반드시 위 형식 그대로 출력하세요. **markdown bold(`**`)를 절대 추가하지 마세요.** 예: `📍 [init]` (O), `📍 **[init]**` (X)
 
 ---
 
@@ -179,6 +214,55 @@ config.json의 stages 배열을 순서대로 순회하며, enabled: true인 단�
 **qa-review** (QA 검수 → review-qa.md)
 - 실행 전: `📍 [qa-review] QA 검수 시작`
 - FAIL이면 qa 단계가 enabled인 경우 최대 3회 재시도
+
+### 커스텀 단계 실행 (stage.id가 표준 목록에 없는 경우)
+
+표준 단계 목록: plan, plan-review, ticket, ticket-review, develop, develop-review, pr, qa, qa-review
+
+**단독 실행 (parallelGroup 없음, 또는 배치 내 유일한 stage):**
+
+출력:
+```
+📍 [{stage.id}] {stage.label이 있으면 label, 없으면 stage.id} 시작
+```
+
+`.claude/commands/generic/{GENERIC_PIPELINE}/{stage.id}.md`를 Read 도구로 읽어 변수 치환 후 Agent 도구로 실행.
+
+완료 출력:
+```
+📍 [{stage.id}] 완료
+```
+
+**병렬 배치 실행 (parallelGroup이 같은 여러 stage):**
+
+배치 내 모든 stage의 `.md`를 Read하고 변수 치환.
+
+배치 시작 전 각 stage마다 개별 마커를 출력합니다:
+```
+📍 [{stage1.id}] {stage1.label이 있으면 label, 없으면 stage1.id} 시작
+📍 [{stage2.id}] {stage2.label이 있으면 label, 없으면 stage2.id} 시작
+```
+
+> ⚠️ 마커 규칙: 반드시 위 형식 그대로 출력. **markdown bold(`**`) 절대 금지.** 예: `📍 [summary] 요약 시작` (O), `📍 **[summary]**` (X)
+
+**단일 Agent 호출**로 내부에서 각 stage를 독립 sub-agent로 병렬 실행:
+
+```
+다음 작업들을 각각 독립된 SubAgent로 동시에 병렬 실행하세요.
+모든 SubAgent가 완료될 때까지 기다리세요.
+
+## SubAgent: {stage1.id}
+{stage1.md 내용 (변수 치환 완료)}
+
+## SubAgent: {stage2.id}
+{stage2.md 내용 (변수 치환 완료)}
+```
+
+완료 출력:
+```
+📍 [{stage1.id}] 완료
+📍 [{stage2.id}] 완료
+```
 
 ---
 

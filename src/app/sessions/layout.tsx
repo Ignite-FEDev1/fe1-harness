@@ -33,7 +33,7 @@ export default function SessionsLayout({
               style={{
                 width: '100%',
                 fontFamily: 'var(--font-mono)',
-                fontSize: '11px',
+                fontSize: '12px',
                 fontWeight: 700,
                 letterSpacing: '0.06em',
                 padding: '7px 14px',

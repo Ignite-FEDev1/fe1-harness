@@ -19,7 +19,19 @@ export async function GET() {
   if (existsSync(GENERIC_DIR)) {
     const dirs = readdirSync(GENERIC_DIR, { withFileTypes: true }).filter((d) => d.isDirectory());
     for (const d of dirs) {
-      const stageCount = readdirSync(path.join(GENERIC_DIR, d.name)).filter((f) => f.endsWith('.md')).length;
+      const dir = path.join(GENERIC_DIR, d.name);
+      const pipelinePath = path.join(dir, 'pipeline.json');
+      let stageCount: number;
+      if (existsSync(pipelinePath)) {
+        try {
+          const config = JSON.parse(readFileSync(pipelinePath, 'utf-8'));
+          stageCount = (config.stages ?? []).length;
+        } catch {
+          stageCount = 0;
+        }
+      } else {
+        stageCount = readdirSync(dir).filter((f) => f.endsWith('.md')).length;
+      }
       genericTaskTypes.push({ taskType: d.name, stageCount });
     }
   }

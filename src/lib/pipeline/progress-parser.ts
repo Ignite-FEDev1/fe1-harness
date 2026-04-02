@@ -16,9 +16,11 @@ export const STAGE_LABELS: Record<string, string> = {
   'qa-review': 'QA 검수',
 };
 
-// Matches lowercase stage IDs like 📍 [plan], 📍 [develop-review]
+// Matches lowercase stage IDs like 📍 [plan], 📍 [develop-review], 📍 [my_stage]
+// Also tolerates Claude adding bold markdown: 📍 **[plan]**
 // Does NOT match 📍 [INIT] (uppercase = system markers)
-const STAGE_MARKER_REGEX = /📍\s*\[([a-z][a-z0-9-]+)\]/;
+// Does NOT match 📍 [parallel] (reserved keyword)
+const STAGE_MARKER_REGEX = /📍\s*\*{0,2}\[([a-z][a-z0-9_-]+)\]\*{0,2}/;
 
 // Legacy step marker (kept for backward compat with old pipeline.md)
 const STEP_REGEX = /📍\s*\[STEP\s+(\d)\/4\]\s*(.+)/;
@@ -33,6 +35,17 @@ const STEP_LABELS: Record<number, string> = {
 const USERGATE_REGEX = /⏸\s*\[사용자 확인 필요\]/;
 const ABORT_REGEX = /⛔/;
 const COMPLETE_REGEX = /✅\s*\[PIPELINE COMPLETE\]|✅\s*파이프라인 완료/;
+
+/** Parse all stage IDs from a text block (may contain multiple markers) */
+export function parseStageIds(text: string): string[] {
+  const regex = new RegExp(STAGE_MARKER_REGEX.source, 'g');
+  const ids: string[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(text)) !== null) {
+    ids.push(match[1]);
+  }
+  return ids;
+}
 
 /** Parse stage ID from orchestrator markers like "📍 [plan] 기획 분석 시작" */
 export function parseStageId(text: string): string | null {

@@ -57,7 +57,7 @@ export function UserGateInput({
           />
           <span
             className="text-xs font-semibold tracking-wider"
-            style={{ color: 'var(--accent-amber)', fontSize: '10px' }}
+            style={{ color: 'var(--accent-amber)', fontSize: '12px' }}
           >
             OPERATOR INPUT REQUIRED
           </span>
@@ -66,7 +66,7 @@ export function UserGateInput({
           className="text-xs whitespace-pre-wrap rounded-md p-3 max-h-40 overflow-y-auto"
           style={{
             fontFamily: 'var(--font-mono)',
-            fontSize: '11px',
+            fontSize: '12px',
             color: 'var(--text-primary)',
             background: 'var(--bg-base)',
             border: '1px solid var(--border-base)',
@@ -93,7 +93,7 @@ export function UserGateInput({
           className="px-5 py-2 text-xs font-semibold rounded transition-all disabled:opacity-30"
           style={{
             fontFamily: 'var(--font-mono)',
-            fontSize: '10px',
+            fontSize: '12px',
             letterSpacing: '0.06em',
             background: 'var(--accent-amber)',
             color: 'var(--bg-void)',

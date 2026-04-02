@@ -18,7 +18,27 @@ export async function GET(
     return NextResponse.json({ error: error.message }, { status: 404 });
   }
 
-  return NextResponse.json(data);
+  // Fetch last active stage from session_logs for progress bar restoration
+  const { data: lastProgress } = await supabase
+    .from('session_logs')
+    .select('content')
+    .eq('session_id', id)
+    .eq('event_type', 'progress')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  let activeStageId: string | null = null;
+  if (lastProgress) {
+    try {
+      const parsed = JSON.parse(lastProgress.content);
+      activeStageId = parsed.stageId ?? null;
+    } catch {
+      // ignore
+    }
+  }
+
+  return NextResponse.json({ ...data, active_stage_id: activeStageId });
 }
 
 export async function PATCH(
@@ -49,6 +69,16 @@ export async function DELETE(
 ) {
   const { id } = await params;
   const supabase = createServerClient();
+
+  // Stop active pipeline execution before deleting
+  const { stopSession, hasActiveQuery } = await import('@/lib/pipeline/active-queries');
+  const { pipelineEventBus } = await import('@/lib/pipeline/event-bus');
+
+  if (hasActiveQuery(id)) {
+    stopSession(id);
+  }
+  pipelineEventBus.emit(id, 'status', { status: 'stopped' });
+  pipelineEventBus.emit(id, 'done', {});
 
   const { error } = await supabase.from('sessions').delete().eq('id', id);
 

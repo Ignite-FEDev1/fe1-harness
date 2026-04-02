@@ -11,6 +11,7 @@ interface StreamingViewProps {
   onRun: (additionalNotes?: string) => void;
   sessionStatus: string;
   stages: PipelineStage[];
+  initialStageId?: string | null;
 }
 
 const STATUS_DISPLAY: Record<string, { label: string; color: string }> = {
@@ -19,7 +20,7 @@ const STATUS_DISPLAY: Record<string, { label: string; color: string }> = {
   completed: { label: 'COMPLETED', color: 'var(--accent-cyan)' },
   error: { label: 'ERROR', color: 'var(--accent-red, #ff4444)' },
   stopped: { label: 'STOPPED', color: 'var(--accent-amber)' },
-  idle: { label: 'IDLE', color: 'var(--text-ghost)' },
+  idle: { label: 'IDLE', color: 'var(--text-muted)' },
 };
 
 export function StreamingView({
@@ -27,9 +28,10 @@ export function StreamingView({
   onRun,
   sessionStatus,
   stages,
+  initialStageId,
 }: StreamingViewProps) {
   const { logs, activeStageId, status, userGatePrompt, isConnected } =
-    useSessionStream(sessionId);
+    useSessionStream(sessionId, initialStageId);
   const logsEndRef = useRef<HTMLDivElement>(null);
   const [additionalNotes, setAdditionalNotes] = useState('');
   const [stopping, setStopping] = useState(false);
@@ -37,7 +39,7 @@ export function StreamingView({
   const displayStatus = status || sessionStatus;
   const statusInfo = STATUS_DISPLAY[displayStatus] ?? STATUS_DISPLAY.idle;
   const isRunning = displayStatus === 'running';
-  const canRun = displayStatus === 'idle' || displayStatus === 'error' || displayStatus === 'completed' || displayStatus === 'stopped';
+  const canRun = displayStatus === 'error' || displayStatus === 'stopped';
 
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -60,7 +62,11 @@ export function StreamingView({
   return (
     <div className="flex flex-col h-full">
       {/* Progress Bar */}
-      <ProgressBar stages={stages} activeStageId={activeStageId} />
+      <ProgressBar
+        stages={stages}
+        activeStageId={activeStageId}
+        allCompleted={displayStatus === 'completed'}
+      />
 
       {/* Status Bar */}
       <div
@@ -72,7 +78,7 @@ export function StreamingView({
           <span
             className="w-1.5 h-1.5 rounded-full flex-shrink-0"
             style={{
-              background: isConnected ? 'var(--accent-green)' : 'var(--text-ghost)',
+              background: isConnected ? 'var(--accent-green)' : 'var(--text-muted)',
               boxShadow: isConnected ? '0 0 6px var(--accent-green)' : 'none',
             }}
           />
@@ -80,7 +86,7 @@ export function StreamingView({
           {/* Status label */}
           <span
             className={`text-xs font-semibold tracking-wider ${isRunning ? 'status-pulse' : ''}`}
-            style={{ color: statusInfo.color, fontFamily: 'var(--font-mono)', fontSize: '10px' }}
+            style={{ color: statusInfo.color, fontFamily: 'var(--font-mono)', fontSize: '12px' }}
           >
             {statusInfo.label}
           </span>
@@ -96,7 +102,7 @@ export function StreamingView({
               className="px-3 py-1 text-xs font-semibold rounded transition-all"
               style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: '10px',
+                fontSize: '12px',
                 letterSpacing: '0.06em',
                 background: 'transparent',
                 color: 'var(--accent-amber, #f59e0b)',
@@ -116,15 +122,15 @@ export function StreamingView({
               className="px-4 py-1 text-xs font-semibold rounded transition-all"
               style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: '10px',
+                fontSize: '12px',
                 letterSpacing: '0.06em',
-                background: displayStatus === 'idle' ? 'var(--accent-green)' : 'var(--bg-surface)',
-                color: displayStatus === 'idle' ? 'var(--bg-void)' : 'var(--text-primary)',
-                border: displayStatus === 'idle' ? 'none' : '1px solid var(--border-base)',
+                background: 'var(--bg-surface)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-base)',
                 cursor: 'pointer',
               }}
             >
-              {displayStatus === 'idle' ? 'EXECUTE' : 'RE-RUN'}
+              RE-RUN
             </button>
           )}
         </div>
@@ -136,16 +142,9 @@ export function StreamingView({
           <div className="flex flex-col items-center justify-center h-full gap-3">
             <div
               className="text-xs"
-              style={{ color: 'var(--text-ghost)', fontFamily: 'var(--font-mono)' }}
+              style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}
             >
-              {displayStatus === 'idle' ? (
-                <>
-                  <span style={{ color: 'var(--accent-green)', opacity: 0.5 }}>{'>'}</span>
-                  {' '}READY — EXECUTE TO START PIPELINE
-                </>
-              ) : (
-                'CONNECTING...'
-              )}
+              CONNECTING...
             </div>
           </div>
         ) : (
@@ -174,7 +173,7 @@ export function StreamingView({
           <p
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: '10px',
+              fontSize: '12px',
               fontWeight: 600,
               letterSpacing: '0.06em',
               color: 'var(--accent-amber, #f59e0b)',
@@ -196,7 +195,7 @@ export function StreamingView({
             className="w-full py-2 text-xs font-bold rounded transition-all"
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: '11px',
+              fontSize: '12px',
               letterSpacing: '0.06em',
               background: 'var(--accent-green)',
               color: 'var(--bg-void)',
@@ -205,6 +204,54 @@ export function StreamingView({
             }}
           >
             ▶ RE-RUN
+          </button>
+        </div>
+      )}
+
+      {/* Follow-up chat after completion */}
+      {displayStatus === 'completed' && (
+        <div
+          style={{
+            padding: '12px 16px',
+            borderTop: '1px solid var(--border-dim)',
+            background: 'var(--bg-raised)',
+            display: 'flex',
+            gap: '8px',
+            alignItems: 'flex-end',
+          }}
+        >
+          <textarea
+            value={additionalNotes}
+            onChange={(e) => setAdditionalNotes(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && additionalNotes.trim()) {
+                handleReRun();
+              }
+            }}
+            placeholder="후속 요청을 입력하세요 — Cmd+Enter로 전송"
+            rows={2}
+            className="input-field"
+            style={{ flex: 1, resize: 'none', lineHeight: '1.6' }}
+          />
+          <button
+            onClick={handleReRun}
+            disabled={!additionalNotes.trim()}
+            style={{
+              padding: '8px 14px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '12px',
+              fontWeight: 700,
+              borderRadius: '5px',
+              background: additionalNotes.trim() ? 'var(--accent-green)' : 'var(--border-base)',
+              color: additionalNotes.trim() ? 'var(--bg-void)' : 'var(--text-muted)',
+              border: 'none',
+              cursor: additionalNotes.trim() ? 'pointer' : 'not-allowed',
+              flexShrink: 0,
+              transition: 'all 0.15s',
+              alignSelf: 'flex-end',
+            }}
+          >
+            ▶
           </button>
         </div>
       )}

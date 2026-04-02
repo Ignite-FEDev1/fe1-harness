@@ -16,10 +16,10 @@ export interface StreamState {
   isConnected: boolean;
 }
 
-export function useSessionStream(sessionId: string | null) {
+export function useSessionStream(sessionId: string | null, initialStageId?: string | null) {
   const [state, setState] = useState<StreamState>({
     logs: [],
-    activeStageId: null,
+    activeStageId: initialStageId ?? null,
     status: 'idle',
     userGatePrompt: null,
     isConnected: false,
@@ -40,7 +40,7 @@ export function useSessionStream(sessionId: string | null) {
     if (resetState) {
       setState({
         logs: [],
-        activeStageId: null,
+        activeStageId: initialStageId ?? null,
         status: 'idle',
         userGatePrompt: null,
         isConnected: false,
@@ -108,7 +108,7 @@ export function useSessionStream(sessionId: string | null) {
       // Reconnect after 3 seconds (without resetting state — history replay will restore it)
       setTimeout(() => connect(false), 3000);
     };
-  }, [sessionId]);
+  }, [sessionId, initialStageId]);
 
   useEffect(() => {
     connect(true); // reset state when sessionId changes

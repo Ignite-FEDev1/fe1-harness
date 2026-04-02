@@ -114,7 +114,10 @@ export async function POST(
     }
   }
 
-  if (!projectPath) {
+  // projectPath required only when a project-based pipeline is selected
+  // projectPath required only when a project-based pipeline is selected
+  const hasProjectPipeline = !!(formData.project_slug && formData.task_type);
+  if (!projectPath && hasProjectPipeline) {
     return NextResponse.json(
       { error: '프로젝트 로컬 경로가 설정되지 않았습니다. 설정 페이지에서 경로를 지정해주세요.' },
       { status: 400 },
@@ -179,9 +182,10 @@ export async function POST(
     }
   }
 
-  // Extract project_slug and task_type from form data (for new orchestrator)
+  // Extract pipeline config from form data
   const projectSlug = (formData.project_slug as string | undefined) ?? undefined;
   const taskType = (formData.task_type as string | undefined) ?? undefined;
+  const genericPipeline = (formData.generic_pipeline as string | undefined) ?? undefined;
 
   // Execute pipeline in background (don't await)
   executePipeline({
@@ -193,6 +197,8 @@ export async function POST(
     model,
     projectSlug,
     taskType,
+    genericPipeline,
+    notes: mergedNotes,
   }).catch((err) => {
     console.error(`Pipeline execution failed for session ${sessionId}:`, err);
   });
