@@ -19,10 +19,6 @@ export const monoInput: React.CSSProperties = {
   width: '100%',
 };
 
-export function sanitizeStageId(raw: string): string {
-  return raw.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9_-]/g, '');
-}
-
 /**
  * Pipeline stage viewer.
  *

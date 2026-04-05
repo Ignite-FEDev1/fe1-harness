@@ -7,6 +7,7 @@ import { GenStageEditor, type GenStage } from '@/components/pipelines/GenStageEd
 import { ExecutionPlanPreview } from '@/components/pipelines/ExecutionPlanPreview';
 import { AiEditPanel } from '@/components/pipelines/AiEditPanel';
 import { AiPanelToggle } from '@/components/pipelines/AiPanelToggle';
+import type { InputSchema } from '@/components/session-form-fields';
 
 export default function GenericPipelinePage() {
   const { name: rawName } = useParams<{ name: string }>();
@@ -16,7 +17,7 @@ export default function GenericPipelinePage() {
   const [stages, setStages] = useState<GenStage[]>([]);
   const [label, setLabel] = useState('');
   const [description, setDescription] = useState('');
-  const [inputSchema, setInputSchema] = useState<{ fields: unknown[] } | null>(null);
+  const [inputSchema, setInputSchema] = useState<InputSchema | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
@@ -213,7 +214,7 @@ export default function GenericPipelinePage() {
                     세션 생성 시 사용자에게 보여지는 입력 필드입니다. AI 어시스턴트로 수정 가능합니다.
                   </div>
                   <div className="flex flex-col gap-1">
-                    {(inputSchema.fields as { id: string; label: string; type: string; required?: boolean; fields?: { id: string; label: string }[]; options?: { value: string; label: string }[]; default?: string | boolean }[]).map((field) => {
+                    {inputSchema.fields.map((field) => {
                       const isParallelInput = field.type === 'repeat-group';
                       const accentColor =
                         field.type === 'repeat-group' ? '#a78bfa' :

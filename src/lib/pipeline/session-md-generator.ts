@@ -21,12 +21,8 @@ export interface SessionFormData {
   login_id?: string;
   login_pw?: string;
   ticket_prefix?: string;
-  epic?: string;
-  assignee?: string;
   branch_name?: string;
   base_branch?: string;
-  replan?: boolean;
-  replan_reason?: string;
   notes?: string;
   pipeline_inputs?: Record<string, string | string[] | boolean>;
 }
@@ -151,17 +147,8 @@ export function generateSessionMd(input: SessionFormData): string {
   if (data.login_id) lines.push(`login_id: ${data.login_id}`);
   if (data.login_pw) lines.push(`login_pw: ${data.login_pw}`);
   if (data.ticket_prefix) lines.push(`ticket_prefix: ${data.ticket_prefix}`);
-  if (data.epic) lines.push(`epic: ${data.epic}`);
-  if (data.assignee) lines.push(`assignee: ${data.assignee}`);
   if (data.branch_name) lines.push(`branch_name: ${data.branch_name}`);
   if (data.base_branch) lines.push(`base_branch: ${data.base_branch}`);
-
-  if (data.replan) {
-    lines.push(`replan: true`);
-    if (data.replan_reason) {
-      lines.push(`replan_reason: ${formatMultiline(data.replan_reason)}`);
-    }
-  }
 
   if (data.notes) {
     lines.push(`notes: ${formatMultiline(data.notes)}`);

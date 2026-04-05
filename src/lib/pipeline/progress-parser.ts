@@ -47,12 +47,6 @@ export function parseStageIds(text: string): string[] {
   return ids;
 }
 
-/** Parse stage ID from orchestrator markers like "📍 [plan] 기획 분석 시작" */
-export function parseStageId(text: string): string | null {
-  const match = text.match(STAGE_MARKER_REGEX);
-  return match ? match[1] : null;
-}
-
 /** Parse legacy step number from old "📍 [STEP N/4]" markers */
 export function parseProgress(text: string): PipelineProgress | null {
   const match = text.match(STEP_REGEX);
