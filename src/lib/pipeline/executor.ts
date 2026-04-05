@@ -32,6 +32,7 @@ interface SDKMessage {
   is_error?: boolean;
   total_cost_usd?: number;
   num_turns?: number;
+  session_id?: string;
 }
 
 function extractTextFromMessage(message: SDKMessage): string {
@@ -140,6 +141,7 @@ export async function executePipeline(options: {
   projectSlug?: string;
   taskType?: string;
   genericPipeline?: string;
+  specialRule?: string;
   notes?: string;
 }) {
   const { sessionId, docsDir, harnessRoot, envVars, model: requestedModel } = options;
@@ -179,7 +181,7 @@ export async function executePipeline(options: {
   // Determine prompt:
   // - If genericPipeline or projectSlug+taskType → orchestrator.md (dynamic pipeline)
   // - Otherwise → use notes directly as prompt (no pipeline)
-  const useOrchestrator = !!(options.genericPipeline || (options.projectSlug && options.taskType));
+  const useOrchestrator = !!(options.genericPipeline || options.specialRule || (options.projectSlug && options.taskType));
 
   let prompt: string;
   if (useOrchestrator) {
@@ -271,6 +273,14 @@ export async function executePipeline(options: {
         } else {
           const cost = sdkMsg.total_cost_usd;
           content = `[완료] 성공 (${cost != null ? `$${cost.toFixed(4)}` : '비용 미제공'}, ${sdkMsg.num_turns ?? 0}턴)`;
+        }
+        // Save Claude session ID so users can resume in CLI
+        if (sdkMsg.session_id) {
+          await supabase
+            .from('sessions')
+            .update({ claude_session_id: sdkMsg.session_id })
+            .eq('id', sessionId);
+          pipelineEventBus.emit(sessionId, 'claude_session_id', { claudeSessionId: sdkMsg.session_id });
         }
       }
 

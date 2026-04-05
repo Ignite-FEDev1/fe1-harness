@@ -1,9 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { SessionList } from '@/components/sidebar/SessionList';
-import { SessionForm } from '@/components/session-form/SessionForm';
 import { AppHeader } from '@/components/layout/AppHeader';
 
 export default function SessionsLayout({
@@ -11,9 +9,6 @@ export default function SessionsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [showForm, setShowForm] = useState(false);
-  const router = useRouter();
-
   return (
     <div className="flex flex-col h-screen" style={{ background: 'var(--bg-void)' }}>
       <AppHeader />
@@ -28,10 +23,13 @@ export default function SessionsLayout({
           <div
             style={{ padding: '10px 12px', borderBottom: '1px solid var(--border-dim)', flexShrink: 0 }}
           >
-            <button
-              onClick={() => setShowForm(true)}
+            <Link
+              href="/sessions/new"
               style={{
+                display: 'block',
                 width: '100%',
+                textAlign: 'center',
+                textDecoration: 'none',
                 fontFamily: 'var(--font-mono)',
                 fontSize: '12px',
                 fontWeight: 700,
@@ -40,12 +38,11 @@ export default function SessionsLayout({
                 borderRadius: '5px',
                 background: 'var(--accent-green)',
                 color: 'var(--bg-void)',
-                border: 'none',
                 boxShadow: '0 0 12px rgba(0,230,118,0.2)',
               }}
             >
               + NEW SESSION
-            </button>
+            </Link>
           </div>
           <div className="overflow-y-auto flex-1">
             <SessionList />
@@ -55,15 +52,6 @@ export default function SessionsLayout({
         {/* Main Content */}
         <main className="flex-1 overflow-hidden">{children}</main>
       </div>
-
-      {/* Session Form Modal */}
-      <SessionForm
-        isOpen={showForm}
-        onClose={() => setShowForm(false)}
-        onCreated={(id) => {
-          router.push(`/sessions/${id}`);
-        }}
-      />
     </div>
   );
 }

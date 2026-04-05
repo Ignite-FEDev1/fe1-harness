@@ -14,6 +14,7 @@ export interface StreamState {
   status: string;
   userGatePrompt: string | null;
   isConnected: boolean;
+  claudeSessionId: string | null;
 }
 
 export function useSessionStream(sessionId: string | null, initialStageId?: string | null) {
@@ -23,6 +24,7 @@ export function useSessionStream(sessionId: string | null, initialStageId?: stri
     status: 'idle',
     userGatePrompt: null,
     isConnected: false,
+    claudeSessionId: null,
   });
 
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -44,6 +46,7 @@ export function useSessionStream(sessionId: string | null, initialStageId?: stri
         status: 'idle',
         userGatePrompt: null,
         isConnected: false,
+        claudeSessionId: null,
       });
     }
 
@@ -95,6 +98,11 @@ export function useSessionStream(sessionId: string | null, initialStageId?: stri
         userGatePrompt:
           data.status === 'running' ? null : prev.userGatePrompt,
       }));
+    });
+
+    es.addEventListener('claude_session_id', (event) => {
+      const data = JSON.parse(event.data);
+      setState((prev) => ({ ...prev, claudeSessionId: data.claudeSessionId }));
     });
 
     es.addEventListener('done', () => {

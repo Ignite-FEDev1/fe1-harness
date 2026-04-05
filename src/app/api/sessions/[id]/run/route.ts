@@ -186,6 +186,7 @@ export async function POST(
   const projectSlug = (formData.project_slug as string | undefined) ?? undefined;
   const taskType = (formData.task_type as string | undefined) ?? undefined;
   const genericPipeline = (formData.generic_pipeline as string | undefined) ?? undefined;
+  const specialRule = (formData.special_rule as string | undefined) ?? undefined;
 
   // Execute pipeline in background (don't await)
   executePipeline({
@@ -198,6 +199,7 @@ export async function POST(
     projectSlug,
     taskType,
     genericPipeline,
+    specialRule,
     notes: mergedNotes,
   }).catch((err) => {
     console.error(`Pipeline execution failed for session ${sessionId}:`, err);

@@ -28,6 +28,7 @@ type SessionEventMap = {
   progress: ProgressEvent;
   usergate: UserGateEvent;
   status: StatusEvent;
+  claude_session_id: { claudeSessionId: string };
   done: Record<string, never>;
 };
 

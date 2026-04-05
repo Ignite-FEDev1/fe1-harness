@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
 
 export interface SessionListItem {
   id: string;
@@ -15,6 +16,7 @@ export interface SessionListItem {
 export function useSessionList() {
   const [sessions, setSessions] = useState<SessionListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const pathname = usePathname();
 
   const fetchSessions = useCallback(async () => {
     try {
@@ -30,11 +32,17 @@ export function useSessionList() {
     }
   }, []);
 
+  // Fetch on mount
   useEffect(() => {
     fetchSessions();
   }, [fetchSessions]);
 
-  // Poll only when there are active (running/paused) sessions
+  // Re-fetch when pathname changes (e.g. after creating a new session)
+  useEffect(() => {
+    fetchSessions();
+  }, [pathname, fetchSessions]);
+
+  // Poll when there are active (running/paused) sessions
   useEffect(() => {
     const hasActive = sessions.some(
       (s) => s.status === 'running' || s.status === 'paused',

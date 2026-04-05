@@ -1,0 +1,10 @@
+{
+  "label": "신규스펙개발-경량",
+  "description": "경량 파이프라인 (기획 → 검수 → 개발 → 검수). 티켓 생성/QA 없음.",
+  "stages": [
+    { "id": "plan", "label": "기획 분석" },
+    { "id": "plan-review", "label": "계획서 검수" },
+    { "id": "develop", "label": "개발" },
+    { "id": "develop-review", "label": "코드 리뷰", "fanout": 3 }
+  ]
+}

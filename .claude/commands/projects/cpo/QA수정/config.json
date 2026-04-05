@@ -24,6 +24,5 @@
       "id": "qa-review",
       "enabled": false
     }
-  ],
-  "genericPipeline": "QA수정"
+  ]
 }

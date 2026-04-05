@@ -1,0 +1,7 @@
+{
+  "stages": [
+    { "id": "process-ticket", "label": "티켓 처리", "parallel": "tickets" },
+    { "id": "merge", "label": "머지" },
+    { "id": "post-merge-review", "label": "머지 후 검수" }
+  ]
+}

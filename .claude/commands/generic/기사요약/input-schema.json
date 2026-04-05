@@ -1,0 +1,21 @@
+{
+  "fields": [
+    {
+      "id": "articles",
+      "label": "뉴스 기사",
+      "type": "repeat-group",
+      "required": true,
+      "fields": [
+        { "id": "url", "label": "기사 URL", "type": "text", "placeholder": "https://news.example.com/article" },
+        { "id": "title", "label": "기사 제목", "type": "text", "placeholder": "기사 제목 입력" }
+      ]
+    },
+    {
+      "id": "summary_style",
+      "label": "요약 스타일",
+      "type": "text",
+      "required": false,
+      "placeholder": "간단 요약 / 상세 요약"
+    }
+  ]
+}

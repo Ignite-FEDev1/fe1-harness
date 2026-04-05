@@ -12,6 +12,7 @@ interface StreamingViewProps {
   sessionStatus: string;
   stages: PipelineStage[];
   initialStageId?: string | null;
+  onClaudeSessionId?: (id: string) => void;
 }
 
 const STATUS_DISPLAY: Record<string, { label: string; color: string }> = {
@@ -29,9 +30,14 @@ export function StreamingView({
   sessionStatus,
   stages,
   initialStageId,
+  onClaudeSessionId,
 }: StreamingViewProps) {
-  const { logs, activeStageId, status, userGatePrompt, isConnected } =
+  const { logs, activeStageId, status, userGatePrompt, isConnected, claudeSessionId } =
     useSessionStream(sessionId, initialStageId);
+
+  useEffect(() => {
+    if (claudeSessionId) onClaudeSessionId?.(claudeSessionId);
+  }, [claudeSessionId, onClaudeSessionId]);
   const logsEndRef = useRef<HTMLDivElement>(null);
   const [additionalNotes, setAdditionalNotes] = useState('');
   const [stopping, setStopping] = useState(false);

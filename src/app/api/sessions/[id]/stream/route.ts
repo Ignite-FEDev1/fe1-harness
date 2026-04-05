@@ -51,7 +51,7 @@ export async function GET(
       // Send current session status
       const { data: session } = await supabase
         .from('sessions')
-        .select('status, current_step, error_message')
+        .select('status, current_step, error_message, claude_session_id')
         .eq('id', sessionId)
         .single();
 
@@ -60,6 +60,9 @@ export async function GET(
         if (session.current_step) {
           send('progress', { step: session.current_step });
         }
+        if (session.claude_session_id) {
+          send('claude_session_id', { claudeSessionId: session.claude_session_id });
+        }
       }
 
       // 2. Subscribe to live events
@@ -67,6 +70,7 @@ export async function GET(
       const onProgress = (data: ProgressEvent) => send('progress', data);
       const onUserGate = (data: UserGateEvent) => send('usergate', data);
       const onStatus = (data: StatusEvent) => send('status', data);
+      const onClaudeSessionId = (data: { claudeSessionId: string }) => send('claude_session_id', data);
       const onDone = () => {
         send('done', {});
         cleanup();
@@ -76,6 +80,7 @@ export async function GET(
       pipelineEventBus.on(sessionId, 'progress', onProgress);
       pipelineEventBus.on(sessionId, 'usergate', onUserGate);
       pipelineEventBus.on(sessionId, 'status', onStatus);
+      pipelineEventBus.on(sessionId, 'claude_session_id', onClaudeSessionId);
       pipelineEventBus.on(sessionId, 'done', onDone);
 
       // Heartbeat every 25 seconds to prevent proxy/browser timeout
@@ -93,6 +98,7 @@ export async function GET(
         pipelineEventBus.off(sessionId, 'progress', onProgress);
         pipelineEventBus.off(sessionId, 'usergate', onUserGate);
         pipelineEventBus.off(sessionId, 'status', onStatus);
+        pipelineEventBus.off(sessionId, 'claude_session_id', onClaudeSessionId);
         pipelineEventBus.off(sessionId, 'done', onDone);
         try {
           controller.close();

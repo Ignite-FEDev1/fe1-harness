@@ -4,6 +4,7 @@ import path from 'path';
 export interface SessionFormData {
   project_path?: string;
   generic_pipeline?: string;
+  special_rule?: string;
   project_slug?: string;
   task_type?: string;
   confluence_urls?: string[];
@@ -27,6 +28,7 @@ export interface SessionFormData {
   replan?: boolean;
   replan_reason?: string;
   notes?: string;
+  pipeline_inputs?: Record<string, string | string[] | boolean>;
 }
 
 function formatYamlList(items: string[] | undefined): string {
@@ -39,11 +41,74 @@ function formatMultiline(text: string | undefined): string {
   return `|\n  ${text.replace(/\n/g, '\n  ')}`;
 }
 
-export function generateSessionMd(data: SessionFormData): string {
+/**
+ * Promote known top-level field names from pipeline_inputs to top-level fields.
+ * This lets pipelines declare fields like `confluence_urls` in their input-schema.json
+ * and have them appear at session.md top level (so orchestrator's {MARKUP_PATH}, {LOGIN_URL}
+ * etc. variable injection works).
+ *
+ * Unknown fields stay in pipeline_inputs.
+ */
+function promoteKnownFields(data: SessionFormData): SessionFormData {
+  if (!data.pipeline_inputs) return data;
+
+  const inputs = { ...data.pipeline_inputs };
+  const promoted: SessionFormData = { ...data };
+
+  const takeString = (key: string): string | undefined => {
+    const v = inputs[key];
+    if (typeof v === 'string' && v.trim()) {
+      delete inputs[key];
+      return v;
+    }
+    return undefined;
+  };
+  const takeList = (key: string): string[] | undefined => {
+    const v = inputs[key];
+    if (Array.isArray(v) && v.length > 0) {
+      delete inputs[key];
+      return v;
+    }
+    return undefined;
+  };
+
+  promoted.confluence_urls ??= takeList('confluence_urls');
+  promoted.api_doc_urls ??= takeList('api_doc_urls');
+  promoted.figma_urls ??= takeList('figma_urls');
+  promoted.figma_notes ??= takeString('figma_notes');
+  promoted.swagger_urls ??= takeList('swagger_urls');
+  const markupPath = takeString('markup_path');
+  const markupNotes = takeString('markup_notes');
+  if (markupPath || markupNotes) {
+    promoted.markup = {
+      ...(promoted.markup ?? {}),
+      ...(markupPath ? { path: markupPath } : {}),
+      ...(markupNotes ? { notes: markupNotes } : {}),
+    };
+  }
+  const beStatus = takeString('be_api_status');
+  if (beStatus === 'dev' || beStatus === 'stg' || beStatus === 'none') {
+    promoted.be_api_status ??= beStatus;
+  }
+  promoted.login_url ??= takeString('login_url');
+  promoted.login_id ??= takeString('login_id');
+  promoted.login_pw ??= takeString('login_pw');
+  promoted.ticket_prefix ??= takeString('ticket_prefix');
+  promoted.branch_name ??= takeString('branch_name');
+  promoted.base_branch ??= takeString('base_branch');
+  if (!promoted.notes) promoted.notes = takeString('notes');
+
+  promoted.pipeline_inputs = Object.keys(inputs).length > 0 ? inputs : undefined;
+  return promoted;
+}
+
+export function generateSessionMd(input: SessionFormData): string {
+  const data = promoteKnownFields(input);
   const lines: string[] = [];
 
   if (data.project_path) lines.push(`project_path: ${data.project_path}`);
   if (data.generic_pipeline) lines.push(`generic_pipeline: ${data.generic_pipeline}`);
+  if (data.special_rule) lines.push(`special_rule: ${data.special_rule}`);
   if (data.project_slug) lines.push(`project_slug: ${data.project_slug}`);
   if (data.task_type) lines.push(`task_type: ${data.task_type}`);
 
@@ -100,6 +165,23 @@ export function generateSessionMd(data: SessionFormData): string {
 
   if (data.notes) {
     lines.push(`notes: ${formatMultiline(data.notes)}`);
+  }
+
+  if (data.pipeline_inputs && Object.keys(data.pipeline_inputs).length > 0) {
+    lines.push('pipeline_inputs:');
+    for (const [key, value] of Object.entries(data.pipeline_inputs)) {
+      if (typeof value === 'boolean') {
+        lines.push(`  ${key}: ${value}`);
+      } else if (Array.isArray(value)) {
+        if (value.length > 0) {
+          lines.push(`  ${key}:`);
+          lines.push(value.map((v) => `    - ${v}`).join('\n'));
+        }
+      } else if (value) {
+        const indented = value.replace(/\n/g, '\n    ');
+        lines.push(`  ${key}: |\n    ${indented}`);
+      }
+    }
   }
 
   return lines.join('\n') + '\n';

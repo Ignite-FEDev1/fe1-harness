@@ -10,12 +10,6 @@ interface Project {
   repo_url?: string;
 }
 
-interface PipelineConfig {
-  slug: string;
-  taskType: string;
-  label: string;
-}
-
 interface GenericTaskType {
   taskType: string;
   stageCount: number;
@@ -53,12 +47,12 @@ function FormLabel({ children, optional }: { children: React.ReactNode; optional
 export function SessionForm({ isOpen, onClose, onCreated }: SessionFormProps) {
   const { selectedUser, currentModel } = useUser();
   const [projects, setProjects] = useState<Project[]>([]);
-  const [pipelineConfigs, setPipelineConfigs] = useState<PipelineConfig[]>([]);
+  const [specials, setSpecials] = useState<string[]>([]);
   const [genericTaskTypes, setGenericTaskTypes] = useState<GenericTaskType[]>([]);
 
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [selectedGeneric, setSelectedGeneric] = useState('');
-  const [selectedSpecialRules, setSelectedSpecialRules] = useState(''); // "slug/taskType"
+  const [selectedSpecial, setSelectedSpecial] = useState('');
 
   const [sessionName, setSessionName] = useState('');
   const [branchName, setBranchName] = useState('');
@@ -94,9 +88,12 @@ export function SessionForm({ isOpen, onClose, onCreated }: SessionFormProps) {
     fetch('/api/pipelines')
       .then((r) => r.json())
       .then((d) => {
-        setPipelineConfigs((d.projects ?? []) as PipelineConfig[]);
         setGenericTaskTypes((d.genericTaskTypes ?? []) as GenericTaskType[]);
       })
+      .catch(() => {});
+    fetch('/api/specials')
+      .then((r) => r.json())
+      .then((d) => Array.isArray(d) && setSpecials(d))
       .catch(() => {});
   }, [isOpen]);
 
@@ -123,7 +120,6 @@ export function SessionForm({ isOpen, onClose, onCreated }: SessionFormProps) {
     if (!notes) return;
     setSubmitting(true);
 
-    const [specialSlug, specialTaskType] = selectedSpecialRules.split('/');
     const resolvedName = sessionName.trim() || branchName.trim() || notes.slice(0, 40);
 
     try {
@@ -135,8 +131,7 @@ export function SessionForm({ isOpen, onClose, onCreated }: SessionFormProps) {
           project_id: selectedProjectId || undefined,
           form_data: {
             generic_pipeline: selectedGeneric || undefined,
-            project_slug: specialSlug || undefined,
-            task_type: specialTaskType || undefined,
+            special_rule: selectedSpecial || undefined,
             branch_name: branchName,
             base_branch: baseBranch || undefined,
             notes,
@@ -161,7 +156,7 @@ export function SessionForm({ isOpen, onClose, onCreated }: SessionFormProps) {
         // Reset
         setSelectedProjectId('');
         setSelectedGeneric('');
-        setSelectedSpecialRules('');
+        setSelectedSpecial('');
         setSessionName('');
         setBranchName('');
         setBaseBranch('');
@@ -262,10 +257,10 @@ export function SessionForm({ isOpen, onClose, onCreated }: SessionFormProps) {
               )}
             </div>
 
-            {/* 2. 범용 파이프라인 + 3. 프로젝트 특수 규칙 — side by side */}
+            {/* 2. 파이프라인 + 3. 특수 규칙 — side by side */}
             <div className="flex gap-3">
               <div style={{ flex: 1 }}>
-                <FormLabel optional>범용 파이프라인</FormLabel>
+                <FormLabel optional>파이프라인</FormLabel>
                 <Select
                   value={selectedGeneric}
                   onChange={setSelectedGeneric}
@@ -277,14 +272,14 @@ export function SessionForm({ isOpen, onClose, onCreated }: SessionFormProps) {
                 />
               </div>
               <div style={{ flex: 1 }}>
-                <FormLabel optional>프로젝트 특수 규칙</FormLabel>
+                <FormLabel optional>특수 규칙</FormLabel>
                 <Select
-                  value={selectedSpecialRules}
-                  onChange={setSelectedSpecialRules}
+                  value={selectedSpecial}
+                  onChange={setSelectedSpecial}
                   placeholder="선택"
-                  options={pipelineConfigs.map((c) => ({
-                    value: `${c.slug}/${c.taskType}`,
-                    label: `${c.slug} / ${c.label}`,
+                  options={specials.map((name) => ({
+                    value: name,
+                    label: name,
                   }))}
                 />
               </div>

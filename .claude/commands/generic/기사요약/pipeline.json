@@ -1,0 +1,6 @@
+{
+  "stages": [
+    { "id": "summarize", "label": "기사 요약", "parallel": "articles" },
+    { "id": "report", "label": "종합 보고서 생성" }
+  ]
+}

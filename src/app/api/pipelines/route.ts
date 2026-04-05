@@ -5,6 +5,7 @@ import path from 'path';
 const COMMANDS_DIR = path.join(process.cwd(), '.claude', 'commands');
 const PROJECTS_DIR = path.join(COMMANDS_DIR, 'projects');
 const GENERIC_DIR = path.join(COMMANDS_DIR, 'generic');
+const SPECIALS_DIR = path.join(COMMANDS_DIR, 'specials');
 
 const STAGE_IDS = [
   'plan', 'plan-review', 'ticket', 'ticket-review',
@@ -69,7 +70,13 @@ export async function GET() {
     }
   }
 
-  return NextResponse.json({ projects: result, genericTaskTypes });
+  const specials: string[] = [];
+  if (existsSync(SPECIALS_DIR)) {
+    readdirSync(SPECIALS_DIR)
+      .filter((f) => f.endsWith('.md'))
+      .forEach((f) => specials.push(f.replace('.md', '')));
+  }
+  return NextResponse.json({ projects: result, genericTaskTypes, specials });
 }
 
 export async function POST(request: Request) {

@@ -1,0 +1,98 @@
+{
+  "fields": [
+    {
+      "id": "notes",
+      "label": "작업 내용 / 메모",
+      "type": "textarea",
+      "required": true,
+      "placeholder": "작업의 배경, 강조사항, 슬랙 히스토리 등"
+    },
+    {
+      "id": "commit_granularity",
+      "label": "커밋 단위",
+      "type": "radio",
+      "required": true,
+      "default": "single",
+      "options": [
+        { "value": "per_task", "label": "작업별 커밋" },
+        { "value": "single", "label": "전체 1개 커밋" },
+        { "value": "none", "label": "커밋 안 함" }
+      ]
+    },
+    {
+      "id": "confluence_urls",
+      "label": "기획서 URL",
+      "type": "url-list",
+      "required": false,
+      "placeholder": "https://*.atlassian.net/wiki/..."
+    },
+    {
+      "id": "api_doc_urls",
+      "label": "API 설계 문서 URL",
+      "type": "url-list",
+      "required": false,
+      "placeholder": "https://..."
+    },
+    {
+      "id": "figma_urls",
+      "label": "Figma URL",
+      "type": "url-list",
+      "required": false,
+      "placeholder": "https://www.figma.com/..."
+    },
+    {
+      "id": "figma_notes",
+      "label": "Figma 특이사항",
+      "type": "textarea",
+      "required": false,
+      "placeholder": "이미지 경로별 케이스 설명 등"
+    },
+    {
+      "id": "swagger_urls",
+      "label": "Swagger URL",
+      "type": "url-list",
+      "required": false,
+      "placeholder": "https://..."
+    },
+    {
+      "id": "markup_path",
+      "label": "마크업 파일 경로",
+      "type": "text",
+      "required": false,
+      "placeholder": "/절대경로/마크업.tsx (없으면 비워두기)"
+    },
+    {
+      "id": "markup_notes",
+      "label": "마크업 특이사항",
+      "type": "textarea",
+      "required": false,
+      "placeholder": "복잡한 UI, 라이브러리 교체 등"
+    },
+    {
+      "id": "be_api_status",
+      "label": "BE API 상태",
+      "type": "radio",
+      "required": false,
+      "default": "dev",
+      "options": [
+        { "value": "dev", "label": "dev" },
+        { "value": "stg", "label": "stg" },
+        { "value": "none", "label": "none (mock)" }
+      ]
+    },
+    {
+      "id": "branch_name",
+      "label": "브랜치명",
+      "type": "text",
+      "required": false,
+      "placeholder": "feature/my-branch (비우면 현재 브랜치 사용)"
+    },
+    {
+      "id": "base_branch",
+      "label": "베이스 브랜치",
+      "type": "text",
+      "required": false,
+      "placeholder": "main"
+    }
+  ]
+}

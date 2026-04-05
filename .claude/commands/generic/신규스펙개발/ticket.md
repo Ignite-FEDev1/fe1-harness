@@ -35,7 +35,7 @@ Agent 도구(subagent_type: Explore)를 사용하여 {PROJECT_PATH}를 분석하
 (변경되지 않은 티켓은 가능한 유지하고, 변경/추가/삭제된 티켓을 명확히 구분하세요.)
 
 [프로젝트 특화 규칙]
-{RULES_TICKET}
+{SPECIAL_RULES}
 (비어있으면 해당 없음)
 
 [이전 검수 피드백]

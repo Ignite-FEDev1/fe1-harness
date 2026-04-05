@@ -1,28 +1,15 @@
 {
+  "label": "신규스펙개발",
+  "description": "신규 기능 스펙 개발 파이프라인 (기획 분석 → 티켓 생성 → 개발 → 코드 검수 → PR 설명 생성 → QA)",
   "stages": [
-    {
-      "id": "plan"
-    },
-    {
-      "id": "plan-review"
-    },
-    {
-      "id": "ticket"
-    },
-    {
-      "id": "ticket-review"
-    },
-    {
-      "id": "develop"
-    },
-    {
-      "id": "develop-review"
-    },
-    {
-      "id": "qa"
-    },
-    {
-      "id": "pr"
-    }
+    { "id": "plan", "label": "기획 분석" },
+    { "id": "plan-review", "label": "계획서 검수" },
+    { "id": "ticket", "label": "티켓 생성" },
+    { "id": "ticket-review", "label": "티켓 검수" },
+    { "id": "develop", "label": "개발" },
+    { "id": "develop-review", "label": "코드 리뷰", "fanout": 3 },
+    { "id": "pr-description", "label": "PR 설명 생성" },
+    { "id": "qa", "label": "QA" },
+    { "id": "qa-review", "label": "QA 검수" }
   ]
 }

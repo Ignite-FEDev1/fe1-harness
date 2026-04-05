@@ -29,18 +29,16 @@ config.json에서 활성화된 단계만 순서대로 실행하고, 각 단계�
 `$ARGUMENTS/session.md`를 읽으세요. 아래 필드를 파악합니다:
 - `project_path`: 작업할 코드베이스 루트 경로 (없으면 코드 작업 없음)
 - `generic_pipeline`: 직접 지정된 범용 파이프라인 이름 (예: `"테스트2"`)
-- `project_slug`: 프로젝트 슬러그 (예: groupware)
-- `task_type`: 업무유형 슬러그 (예: 신규스펙개발)
+- `special_rule`: 특수 규칙 파일 이름 (예: `"groupware"`) — 새 방식
+- `project_slug`: 프로젝트 슬러그 (예: groupware) — 구 방식, 하위 호환
+- `task_type`: 업무유형 슬러그 (예: 신규스펙개발) — 구 방식, 하위 호환
 - `confluence_urls`, `api_doc_urls`, `figma_urls`, `figma_notes`
 - `swagger_urls`, `markup.path`, `markup.notes`, `be_api_status`
 - `login_url`, `login_id`, `login_pw`
 - `ticket_prefix`, `epic`, `assignee`
 - `branch_name`, `notes`
 
-session.md에 `project_slug`나 `task_type`이 없으면:
-- project_slug = "default"
-- task_type = "신규스펙개발"
-으로 fallback합니다.
+session.md에 `generic_pipeline`이 없으면 ⛔ 중단합니다. 파이프라인은 필수입니다.
 
 ### 0-B. 파이프라인 설정 읽기
 
@@ -50,29 +48,7 @@ session.md에 `project_slug`나 `task_type`이 없으면:
 - STEP 0-B.2로 바로 이동합니다
 
 **`generic_pipeline`이 없는 경우:**
-
-`.claude/commands/projects/{project_slug}/{task_type}/config.json`을 Read 도구로 읽으세요.
-
-파일이 없으면 아래 기본값을 사용합니다:
-```json
-{
-  "stages": [
-    { "id": "plan",           "enabled": true },
-    { "id": "plan-review",    "enabled": true },
-    { "id": "ticket",         "enabled": true },
-    { "id": "ticket-review",  "enabled": true },
-    { "id": "develop",        "enabled": true },
-    { "id": "develop-review", "enabled": true },
-    { "id": "pr",             "enabled": true },
-    { "id": "qa",             "enabled": true },
-    { "id": "qa-review",      "enabled": true }
-  ]
-}
-```
-
-config.json의 `genericPipeline` 필드도 읽어 `{GENERIC_PIPELINE}` 변수에 저장합니다.
-- 값이 있으면: 해당 값을 사용 (예: `"QA수정"` → `generic/QA수정/`)
-- 값이 없으면: `task_type`을 fallback으로 사용
+⛔ 중단. 파이프라인이 지정되지 않았습니다.
 
 ### 0-B.2 범용 파이프라인 실행 계획 수립
 
@@ -82,39 +58,46 @@ config.json의 `genericPipeline` 필드도 읽어 `{GENERIC_PIPELINE}` 변수에
 
 pipeline.json의 stages 배열이 실행 순서의 기준이 됩니다.
 
-1. 각 stage의 `id`, `label`, `parallelGroup` 파악
+1. 각 stage의 `id`, `label`, `parallel` 파악
 2. config.json에 해당 stage id가 `enabled: false`로 명시된 경우 → 건너뜀
-3. 연속된 동일 `parallelGroup`을 가진 stages를 **병렬 배치**로 묶어 실행 계획 수립
 
 실행 계획 예시:
 ```
-pipeline.json stages: [research, analyze(g1), synthesize(g1), report]
-→ 실행 배치:
-  배치1: [research]              (순차)
-  배치2: [analyze, synthesize]   (병렬, parallelGroup=g1)
-  배치3: [report]                (순차)
+pipeline.json stages: [
+  { "id": "process-ticket", "parallel": "tickets" },
+  { "id": "merge" },
+  { "id": "post-merge-review" }
+]
+→ 실행 계획:
+  순서1: process-ticket — pipeline_inputs.tickets 배열 길이만큼 병렬 실행
+  순서2: merge          — 순차
+  순서3: post-merge-review — 순차
 ```
 
-이 실행 계획으로 STEP 1+를 진행합니다. 아래의 표준 단계별 규칙보다 **이 계획이 우선**합니다.
+이 실행 계획으로 STEP 1+를 진행합니다.
 
-**pipeline.json이 없는 경우 (표준 파이프라인):**
+**pipeline.json이 없는 경우:**
+⛔ 중단. pipeline.json이 필수입니다.
 
-config.json의 stages 배열을 그대로 사용하고, enabled: true인 단계만 순서대로 실행합니다. 아래 표준 단계별 규칙을 적용합니다.
+### 0-C-0. 범용규칙 로드
+
+`.claude/commands/global-rules.md`를 Read 도구로 읽어 `{GLOBAL_RULES}` 변수에 전체 내용을 저장합니다.
+파일이 없으면: `{GLOBAL_RULES}` = 빈 값.
+
+> 범용규칙은 모든 파이프라인·모든 스테이지에 공통 적용됩니다.
+> 특수 규칙(`{SPECIAL_RULES}`)과는 별개이며, 둘 다 있으면 둘 다 주입합니다.
 
 ### 0-C. 특수 규칙 로드
 
-`.claude/commands/projects/{project_slug}/{task_type}/special.md`를 Read 도구로 읽으세요.
+session.md의 `special_rule` 필드를 확인합니다.
 
-파일이 없으면: 각 `{RULES_*}` 변수를 빈 값으로 설정합니다.
+**`special_rule`이 있는 경우:**
+`.claude/commands/specials/{special_rule}.md`를 Read 도구로 읽어 `{SPECIAL_RULES}` 변수에 전체 내용을 저장합니다.
 
-파일이 있으면: `## SECTION명` 헤더를 기준으로 섹션을 파싱하여 아래 변수에 매핑합니다:
-- `{RULES_PLANNER}` ← `## PLANNER` 섹션 내용
-- `{RULES_DEVELOPER}` ← `## DEVELOPER` 섹션 내용
-- `{RULES_TICKET}` ← `## TICKET` 섹션 내용
-- `{RULES_REVIEWER_AC}` ← `## REVIEWER_AC` 섹션 내용
-- `{RULES_REVIEWER_ARCH}` ← `## REVIEWER_ARCH` 섹션 내용
-- `{RULES_REVIEWER_CONVENTION}` ← `## REVIEWER_CONVENTION` 섹션 내용
-- `{RULES_QA}` ← `## QA` 섹션 내용
+**`special_rule`이 없는 경우 (하위 호환):**
+`project_slug`와 `task_type`이 있으면 `.claude/commands/projects/{project_slug}/{task_type}/special.md`를 Read 도구로 읽어 `{SPECIAL_RULES}` 변수에 전체 내용을 저장합니다.
+
+파일이 없거나 두 필드 모두 없으면: `{SPECIAL_RULES}` = 빈 값.
 
 ### 0-D. 사전 검증
 
@@ -134,19 +117,20 @@ config.json의 stages 배열을 그대로 사용하고, enabled: true인 단계�
 - `{LOGIN_ID}` → session.md의 login_id
 - `{LOGIN_PW}` → session.md의 login_pw
 - `{TICKET_PREFIX}` → session.md의 ticket_prefix (없으면 "")
-- `{EPIC}` → session.md의 epic
-- `{ASSIGNEE}` → session.md의 assignee
 - `{FIGMA_NOTES}` → session.md의 figma_notes
 - `{NOTES}` → session.md의 notes
 - `{BRANCH_NAME}` → session.md의 branch_name (없으면 "")
 - `{BASE_BRANCH}` → session.md의 base_branch (없으면 "main")
+- `{SPECIAL_RULES}` → 0-C에서 로드한 특수 규칙 전체 내용 (없으면 빈 값)
+- `{GLOBAL_RULES}` → 0-C-0에서 로드한 범용규칙 전체 내용 (없으면 빈 값)
 
 초기화 완료 후 출력:
 ```
 📍 [init] 파이프라인 초기화 완료
   - 프로젝트: {project_slug} / {task_type}
+  - 특수 규칙: {special_rule이 있으면 special_rule 값, 없으면 project_slug/task_type 또는 "없음"}
   - 활성 단계: {enabled 단계 목록, 쉼표 구분}
-  - 특수 규칙: {로드됨 / 없음}
+  - 특수 규칙 로드: {로드됨 / 없음}
   - 코드베이스: {PROJECT_PATH}
 ```
 
@@ -163,63 +147,19 @@ config.json의 stages 배열을 순서대로 순회하며, enabled: true인 단�
 각 단계에 대해:
 
 1. **프롬프트 파일 읽기**: `.claude/commands/generic/{GENERIC_PIPELINE}/{stage.id}.md`를 Read 도구로 읽으세요
-2. **변수 치환**: 파일 내 모든 `{변수}` 플레이스홀더를 실제 값으로 치환하세요
+2. **변수 치환**: 파일 내 모든 `{변수}` 플레이스홀더를 실제 값으로 치환하세요. `{SPECIAL_RULES}`, `{GLOBAL_RULES}` 플레이스홀더도 각각 0-C, 0-C-0에서 로드한 내용으로 치환합니다 (없으면 빈 문자열). **프롬프트에 `{GLOBAL_RULES}` 플레이스홀더가 없더라도, 범용규칙이 있으면 프롬프트 끝에 자동 추가합니다.**
 3. **Agent 실행**: 치환된 프롬프트를 Agent 도구의 prompt 파라미터로 전달하세요
 4. **결과 확인**: review 단계는 결과 파일에서 PASS/FAIL을 확인하세요
 
-### 단계별 특성
+### Review 스테이지 재시도 (범용)
 
-**plan** (기획 분석 → plan.md 생성)
-- 실행 전: `📍 [plan] 기획 분석 시작`
-- 결과 파일: `{DOCS_DIR}/plan.md`
-- 다음 단계로 진행
-
-**plan-review** (plan.md 검수 → review-plan.md)
-- 실행 전: `📍 [plan-review] 계획서 검수 시작`
-- 결과 파일: `{DOCS_DIR}/review-plan.md`에서 `## 판정: PASS | FAIL` 확인
-- FAIL이면 plan 단계가 enabled인 경우 최대 3회 재시도 (plan → plan-review 루프)
+stage.id에 `-review`가 포함된 스테이지는 결과 산출물에서 `## 판정: FAIL` 또는 `FAIL`을 감지합니다.
+FAIL인 경우, 바로 앞 스테이지(review 대상)를 재실행하고 다시 review합니다.
+- 최대 3회 재시도
 - 3회 모두 FAIL이면 ⛔ 중단
+- 재시도 시 이전 review 피드백을 다음 실행 프롬프트에 주입합니다
 
-**ticket** (티켓 생성 → tickets.md)
-- 실행 전: `📍 [ticket] 티켓 생성 시작`
-- `{PREV_TICKETS}` = 이전 tickets.md가 있으면 그 내용, 없으면 빈 값
-- `{TICKET_FEEDBACK}` = 이전 review-tickets.md가 있으면 피드백 섹션, 없으면 빈 값
-- 결과 파일: `{DOCS_DIR}/tickets.md`
-
-**ticket-review** (tickets.md 검수 → review-tickets.md)
-- 실행 전: `📍 [ticket-review] 티켓 검수 시작`
-- FAIL이면 ticket 단계가 enabled인 경우 최대 3회 재시도
-- 3회 모두 FAIL이면 ⛔ 중단
-
-**develop** (코드 개발)
-- 실행 전: `📍 [develop] 개발 시작`
-- `{PREV_PLAN}` = plan.md 내용
-- `{REPLAN_REASON}` = 재개발 사유 (없으면 빈 값)
-- 결과: 코드 변경 + `{DOCS_DIR}/changed-files.md`
-
-**develop-review** (코드 리뷰 — 3개 검수자 병렬)
-- 실행 전: `📍 [develop-review] 코드 리뷰 시작 (3개 검수자 병렬)`
-- reviewer-ac, reviewer-architecture, reviewer-convention을 Agent 도구로 병렬 실행
-- 각각 `.claude/commands/pipeline/reviewer-ac.md`, `reviewer-architecture.md`, `reviewer-convention.md` 사용
-- 결과 파일: `review-ac.md`, `review-architecture.md`, `review-convention.md`
-- ANY FAIL이면 develop 단계가 enabled인 경우 최대 3회 재시도
-- 3회 모두 FAIL이면 ⛔ 중단
-
-**pr** (PR 작성 → pr.md)
-- 실행 전: `📍 [pr] PR 작성 시작`
-
-**qa** (QA 실행 → qa.md)
-- 실행 전: `📍 [qa] QA 시작`
-
-**qa-review** (QA 검수 → review-qa.md)
-- 실행 전: `📍 [qa-review] QA 검수 시작`
-- FAIL이면 qa 단계가 enabled인 경우 최대 3회 재시도
-
-### 커스텀 단계 실행 (stage.id가 표준 목록에 없는 경우)
-
-표준 단계 목록: plan, plan-review, ticket, ticket-review, develop, develop-review, pr, qa, qa-review
-
-**단독 실행 (parallelGroup 없음, 또는 배치 내 유일한 stage):**
+### 순차 실행 (stage.parallel 없음)
 
 출력:
 ```
@@ -233,36 +173,43 @@ config.json의 stages 배열을 순서대로 순회하며, enabled: true인 단�
 📍 [{stage.id}] 완료
 ```
 
-**병렬 배치 실행 (parallelGroup이 같은 여러 stage):**
+**병렬 실행 (stage.parallel 필드가 있는 경우):**
 
-배치 내 모든 stage의 `.md`를 Read하고 변수 치환.
+`stage.parallel` 값의 이름을 가진 입력 배열 (session.md의 `pipeline_inputs.{stage.parallel}`) 의 각 항목마다 독립 SubAgent를 동시에 실행합니다.
 
-배치 시작 전 각 stage마다 개별 마커를 출력합니다:
+1. session.md를 Read 도구로 읽어 `pipeline_inputs.{stage.parallel}` 값을 파악한다
+2. JSON 배열로 파싱한다 (파싱 실패 시 줄 단위로 분리)
+3. `.claude/commands/generic/{GENERIC_PIPELINE}/{stage.id}.md`를 Read 도구로 읽는다
+4. 배열의 각 항목(i)마다 아래 변수를 치환하여 SubAgent 프롬프트를 준비한다:
+   - `{ITEM}`: items[i] (객체면 JSON.stringify, 문자열이면 그대로)
+   - `{ITEM_INDEX}`: i (0부터)
+   - `{ITEMS_COUNT}`: 배열 전체 길이
+   - 기존 공통 변수들도 모두 치환
+5. 시작 마커 출력:
 ```
-📍 [{stage1.id}] {stage1.label이 있으면 label, 없으면 stage1.id} 시작
-📍 [{stage2.id}] {stage2.label이 있으면 label, 없으면 stage2.id} 시작
+📍 [{stage.id}] {stage.label이 있으면 label, 없으면 stage.id} 시작 ({ITEMS_COUNT}개 병렬)
 ```
-
-> ⚠️ 마커 규칙: 반드시 위 형식 그대로 출력. **markdown bold(`**`) 절대 금지.** 예: `📍 [summary] 요약 시작` (O), `📍 **[summary]**` (X)
-
-**단일 Agent 호출**로 내부에서 각 stage를 독립 sub-agent로 병렬 실행:
+6. **단일 Agent 호출**로 모든 SubAgent를 동시에 실행:
 
 ```
 다음 작업들을 각각 독립된 SubAgent로 동시에 병렬 실행하세요.
 모든 SubAgent가 완료될 때까지 기다리세요.
 
-## SubAgent: {stage1.id}
-{stage1.md 내용 (변수 치환 완료)}
+## SubAgent: {stage.id}-0
+{stage.md 내용 (ITEM=items[0], ITEM_INDEX=0, ITEMS_COUNT=N으로 치환)}
 
-## SubAgent: {stage2.id}
-{stage2.md 내용 (변수 치환 완료)}
+## SubAgent: {stage.id}-1
+{stage.md 내용 (ITEM=items[1], ITEM_INDEX=1, ITEMS_COUNT=N으로 치환)}
+
+...
 ```
 
 완료 출력:
 ```
-📍 [{stage1.id}] 완료
-📍 [{stage2.id}] 완료
+📍 [{stage.id}] 완료
 ```
+
+> ⚠️ 마커 규칙: 반드시 위 형식 그대로 출력. **markdown bold(`**`) 절대 금지.** 예: `📍 [process-ticket] 시작` (O), `📍 **[process-ticket]**` (X)
 
 ---
 

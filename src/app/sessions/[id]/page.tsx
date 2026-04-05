@@ -26,14 +26,26 @@ export default function SessionDetailPage({
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [stages, setStages] = useState<PipelineStage[]>([]);
+  const [claudeSessionId, setClaudeSessionId] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     fetch(`/api/sessions/${id}`)
       .then((res) => res.json())
-      .then((data) => setSession(data))
+      .then((data) => {
+        setSession(data);
+        if (data.claude_session_id) setClaudeSessionId(data.claude_session_id);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [id]);
+
+  const handleCopy = () => {
+    if (!claudeSessionId) return;
+    navigator.clipboard.writeText(`claude --resume ${claudeSessionId}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   // Fetch pipeline stages
   useEffect(() => {
@@ -51,10 +63,11 @@ export default function SessionDetailPage({
           if (Array.isArray(pData.stages) && pData.stages.length > 0) {
             setStages([
               INIT_STAGE,
-              ...(pData.stages as { id: string; label?: string; parallelGroup?: string }[]).map((s) => ({
+              ...(pData.stages as { id: string; label?: string; parallel?: string; fanout?: number }[]).map((s) => ({
                 id: s.id,
                 label: s.label ?? STAGE_LABELS[s.id] ?? s.id,
-                parallelGroup: s.parallelGroup,
+                parallel: s.parallel,
+                fanout: s.fanout,
               })),
             ]);
           } else {
@@ -95,9 +108,9 @@ export default function SessionDetailPage({
               const hasCustomIds = pData.stages.some((s: { id: string }) => !projectIds.has(s.id));
               setStages([
                 INIT_STAGE,
-                ...(pData.stages as { id: string; label?: string; parallelGroup?: string }[])
+                ...(pData.stages as { id: string; label?: string; parallel?: string; fanout?: number }[])
                   .filter((s) => hasCustomIds || enabledSet.has(s.id))
-                  .map((s) => ({ id: s.id, label: s.label ?? STAGE_LABELS[s.id] ?? s.id, parallelGroup: s.parallelGroup })),
+                  .map((s) => ({ id: s.id, label: s.label ?? STAGE_LABELS[s.id] ?? s.id, parallel: s.parallel, fanout: s.fanout })),
               ]);
               return;
             }
@@ -194,6 +207,26 @@ export default function SessionDetailPage({
             {String(session.form_data.api_mode ?? '').toUpperCase()}
           </span>
         )}
+        {claudeSessionId && (
+          <button
+            onClick={handleCopy}
+            title={`claude --resume ${claudeSessionId}`}
+            style={{
+              marginLeft: 'auto',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '11px',
+              color: copied ? 'var(--accent-green)' : 'var(--text-muted)',
+              background: 'transparent',
+              border: `1px solid ${copied ? 'rgba(0,230,118,0.3)' : 'var(--border-dim)'}`,
+              borderRadius: '4px',
+              padding: '2px 8px',
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+          >
+            {copied ? '✓ 복사됨' : 'CLI 이어하기'}
+          </button>
+        )}
       </div>
 
       {/* Streaming View */}
@@ -204,6 +237,7 @@ export default function SessionDetailPage({
           sessionStatus={session.status}
           stages={stages}
           initialStageId={session.active_stage_id}
+          onClaudeSessionId={setClaudeSessionId}
         />
       </div>
     </div>

@@ -7,9 +7,9 @@ import { Select } from '@/components/ui/Select';
 
 const NAV_LINKS = [
   { href: '/sessions', label: 'SESSIONS' },
-  { href: '/chat', label: 'CHAT' },
+  { href: '/create-pipeline', label: 'CREATE' },
   { href: '/pipelines', label: 'PIPELINES' },
-  { href: '/test', label: 'TEST' },
+  { href: '/chat', label: 'CHAT' },
   { href: '/admin', label: 'ADMIN' },
 ] as const;
 

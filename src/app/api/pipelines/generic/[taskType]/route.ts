@@ -7,7 +7,8 @@ const GENERIC_DIR = path.join(process.cwd(), '.claude', 'commands', 'generic');
 interface GenStage {
   id: string;
   label?: string;
-  parallelGroup?: string;
+  parallel?: string;
+  fanout?: number;
 }
 
 export async function GET(
@@ -22,12 +23,21 @@ export async function GET(
   }
 
   const pipelinePath = path.join(dir, 'pipeline.json');
+  const inputSchemaPath = path.join(dir, 'input-schema.json');
+
+  let inputSchema: unknown = null;
+  if (existsSync(inputSchemaPath)) {
+    try { inputSchema = JSON.parse(readFileSync(inputSchemaPath, 'utf-8')); } catch { /* ignore */ }
+  }
+
   if (existsSync(pipelinePath)) {
     try {
       const config = JSON.parse(readFileSync(pipelinePath, 'utf-8'));
-      return NextResponse.json(config);
+      const label: string = config.label ?? taskType;
+      const description: string = config.description ?? '';
+      return NextResponse.json({ ...config, label, description, inputSchema });
     } catch {
-      return NextResponse.json({ stages: [] });
+      return NextResponse.json({ stages: [], label: taskType, description: '', inputSchema });
     }
   }
 
@@ -36,7 +46,7 @@ export async function GET(
     .filter((f) => f.endsWith('.md'))
     .map((f) => ({ id: f.replace('.md', '') }));
 
-  return NextResponse.json({ stages });
+  return NextResponse.json({ stages, label: taskType, description: '', inputSchema });
 }
 
 export async function PUT(
@@ -45,18 +55,35 @@ export async function PUT(
 ) {
   const { taskType } = await params;
   const dir = path.join(GENERIC_DIR, taskType);
-  const { stages } = await request.json() as { stages: GenStage[] };
+  const { stages, label, description, inputSchema } = await request.json() as { stages: GenStage[]; label?: string; description?: string; inputSchema?: unknown };
 
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
   }
 
+  // Read existing pipeline.json to preserve other fields
+  const pipelinePath = path.join(dir, 'pipeline.json');
+  let existing: Record<string, unknown> = {};
+  if (existsSync(pipelinePath)) {
+    try { existing = JSON.parse(readFileSync(pipelinePath, 'utf-8')); } catch { /* ignore */ }
+  }
+
+  const updated: Record<string, unknown> = { ...existing, stages };
+  if (label !== undefined) updated.label = label;
+  if (description !== undefined) updated.description = description;
+
   // Update pipeline.json
   writeFileSync(
-    path.join(dir, 'pipeline.json'),
-    JSON.stringify({ stages }, null, 2),
+    pipelinePath,
+    JSON.stringify(updated, null, 2),
     'utf-8',
   );
+
+  // Update input-schema.json if provided
+  if (inputSchema !== undefined) {
+    const inputSchemaPath = path.join(dir, 'input-schema.json');
+    writeFileSync(inputSchemaPath, JSON.stringify(inputSchema, null, 2), 'utf-8');
+  }
 
   const activeIds = new Set(stages.map((s) => s.id));
 

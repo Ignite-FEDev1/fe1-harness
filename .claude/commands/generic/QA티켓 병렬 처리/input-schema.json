@@ -1,0 +1,30 @@
+{
+  "fields": [
+    {
+      "id": "tickets",
+      "label": "QA 티켓",
+      "type": "repeat-group",
+      "required": true,
+      "fields": [
+        { "id": "url", "label": "티켓 URL", "type": "text", "placeholder": "https://jira.example.com/browse/QA-123" },
+        { "id": "branch", "label": "작업 브랜치", "type": "text", "placeholder": "feature/qa-123" },
+        { "id": "base_branch", "label": "베이스 브랜치", "type": "text", "placeholder": "main" },
+        { "id": "requests", "label": "요청사항", "type": "text", "placeholder": "수정할 내용을 간단히 입력" }
+      ]
+    },
+    {
+      "id": "merge_branch",
+      "label": "최종 머지 대상 브랜치",
+      "type": "text",
+      "required": true,
+      "placeholder": "release/2026-04-sprint1"
+    },
+    {
+      "id": "global_instructions",
+      "label": "전역 유의사항 (모든 티켓에 공통 적용)",
+      "type": "textarea",
+      "required": false,
+      "placeholder": "공통으로 지켜야 할 코딩 컨벤션, 금지 패턴 등"
+    }
+  ]
+}
