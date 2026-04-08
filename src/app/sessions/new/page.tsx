@@ -57,6 +57,8 @@ export default function NewSessionPage() {
   const [fieldValues, setFieldValues] = useState<Record<string, FieldValue>>({});
   // File state (separate because File objects can't serialize to JSON)
   const [fileState, setFileState] = useState<Record<string, File[]>>({});
+  // File state for repeat-group sub-fields: { fieldId: { cardIdx: { subFieldId: File[] } } }
+  const [repeatFileState, setRepeatFileState] = useState<Record<string, Record<number, Record<string, File[]>>>>({});
 
   // Legacy fields (when no schema)
   const [branchName, setBranchName] = useState('');
@@ -200,39 +202,70 @@ export default function NewSessionPage() {
 
       const session = await res.json();
 
-      // Upload files (if any file fields have files)
-      const hasFiles = Object.values(fileState).some((files) => files.length > 0);
-      if (hasFiles) {
-        const filePathsByField: Record<string, string[]> = {};
-        for (const [fieldId, files] of Object.entries(fileState)) {
-          if (files.length === 0) continue;
-          const fd = new FormData();
-          files.forEach((f) => fd.append('files', f));
-          fd.append('fieldId', fieldId);
-          const uploadRes = await fetch(`/api/sessions/${session.id}/upload`, {
-            method: 'POST',
-            body: fd,
-          });
-          if (uploadRes.ok) {
-            const uploadData = await uploadRes.json();
-            filePathsByField[fieldId] = uploadData.paths;
+      // Upload files (top-level file fields + repeat-group file sub-fields)
+      const filePathsByField: Record<string, string[]> = {};
+
+      // Top-level file fields
+      for (const [fieldId, files] of Object.entries(fileState)) {
+        if (files.length === 0) continue;
+        const fd = new FormData();
+        files.forEach((f) => fd.append('files', f));
+        fd.append('fieldId', fieldId);
+        const uploadRes = await fetch(`/api/sessions/${session.id}/upload`, {
+          method: 'POST',
+          body: fd,
+        });
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          filePathsByField[fieldId] = uploadData.paths;
+        }
+      }
+
+      // Repeat-group file sub-fields
+      // Embed uploaded paths into each card's data: pipeline_inputs.{groupId}[cardIdx].{subFieldId} = [paths]
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let updatedPipelineInputs: Record<string, any> = { ...(pipeline_inputs ?? {}) };
+      for (const [groupId, cardFiles] of Object.entries(repeatFileState)) {
+        const cards = (updatedPipelineInputs[groupId] as unknown as Record<string, unknown>[]) ?? [];
+        for (const [cardIdxStr, subFields] of Object.entries(cardFiles)) {
+          const cardIdx = Number(cardIdxStr);
+          for (const [subFieldId, files] of Object.entries(subFields)) {
+            if (files.length === 0) continue;
+            const fd = new FormData();
+            files.forEach((f) => fd.append('files', f));
+            fd.append('fieldId', `${groupId}_${cardIdx}_${subFieldId}`);
+            const uploadRes = await fetch(`/api/sessions/${session.id}/upload`, {
+              method: 'POST',
+              body: fd,
+            });
+            if (uploadRes.ok) {
+              const uploadData = await uploadRes.json();
+              if (!cards[cardIdx]) cards[cardIdx] = {};
+              (cards[cardIdx] as Record<string, unknown>)[subFieldId] = uploadData.paths;
+            }
           }
         }
+        updatedPipelineInputs[groupId] = cards;
+      }
 
-        // Merge file paths into pipeline_inputs
-        if (Object.keys(filePathsByField).length > 0) {
-          const updatedInputs = { ...(pipeline_inputs ?? {}), ...filePathsByField };
-          await fetch(`/api/sessions/${session.id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              form_data: {
-                ...session.form_data,
-                pipeline_inputs: updatedInputs,
-              },
-            }),
-          });
-        }
+      // Merge file paths into pipeline_inputs
+      const mergedInputs = { ...updatedPipelineInputs, ...filePathsByField };
+      const hasAnyFiles = Object.keys(filePathsByField).length > 0
+        || Object.values(repeatFileState).some((cards) =>
+          Object.values(cards).some((subs) =>
+            Object.values(subs).some((f) => f.length > 0)));
+
+      if (hasAnyFiles) {
+        await fetch(`/api/sessions/${session.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            form_data: {
+              ...session.form_data,
+              pipeline_inputs: mergedInputs,
+            },
+          }),
+        });
       }
 
       // Auto-run
@@ -610,6 +643,8 @@ export default function NewSessionPage() {
                         onChange={(v) => setFieldValue(field.id, v)}
                         subFields={field.fields}
                         groupLabel={field.label}
+                        fileState={repeatFileState[field.id]}
+                        onFileStateChange={(s) => setRepeatFileState((prev) => ({ ...prev, [field.id]: s }))}
                       />
                     )}
                     {field.type === 'checkbox' && (

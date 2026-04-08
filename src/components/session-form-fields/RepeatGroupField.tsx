@@ -1,5 +1,7 @@
 'use client';
 
+import { useState, useCallback } from 'react';
+import { FileField } from './FileField';
 import type { InputField } from './types';
 
 /**
@@ -12,15 +14,29 @@ export function RepeatGroupField({
   onChange,
   subFields,
   groupLabel,
+  fileState,
+  onFileStateChange,
 }: {
   value: Record<string, string>[];
   onChange: (v: Record<string, string>[]) => void;
   subFields: InputField[];
   groupLabel: string;
+  /** Per-card file state: { cardIdx: { fieldId: File[] } } */
+  fileState?: Record<number, Record<string, File[]>>;
+  onFileStateChange?: (state: Record<number, Record<string, File[]>>) => void;
 }) {
+  // Internal file state fallback if not managed externally
+  const [internalFileState, setInternalFileState] = useState<Record<number, Record<string, File[]>>>({});
+  const files = fileState ?? internalFileState;
+  const setFiles = onFileStateChange ?? setInternalFileState;
+
+  const hasFileFields = subFields.some((f) => f.type === 'file');
+
   const addItem = () => {
     const empty: Record<string, string> = {};
-    for (const f of subFields) empty[f.id] = '';
+    for (const f of subFields) {
+      if (f.type !== 'file') empty[f.id] = '';
+    }
     onChange([...value, empty]);
   };
 
@@ -29,7 +45,24 @@ export function RepeatGroupField({
     onChange(next);
   };
 
-  const removeItem = (idx: number) => onChange(value.filter((_, i) => i !== idx));
+  const updateFiles = useCallback((cardIdx: number, fieldId: string, fieldFiles: File[]) => {
+    setFiles({ ...files, [cardIdx]: { ...(files[cardIdx] ?? {}), [fieldId]: fieldFiles } });
+  }, [files, setFiles]);
+
+  const removeItem = (idx: number) => {
+    onChange(value.filter((_, i) => i !== idx));
+    if (hasFileFields) {
+      // Re-index file state after removal
+      const newFiles: Record<number, Record<string, File[]>> = {};
+      for (const [key, val] of Object.entries(files)) {
+        const k = Number(key);
+        if (k < idx) newFiles[k] = val;
+        else if (k > idx) newFiles[k - 1] = val;
+        // k === idx is removed
+      }
+      setFiles(newFiles);
+    }
+  };
 
   // Show first non-empty sub-field value as card summary
   const itemSummary = (item: Record<string, string>) => {
@@ -123,27 +156,49 @@ export function RepeatGroupField({
           {/* Sub-fields */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {subFields.map((sf) => (
-              <div key={sf.id} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '11px',
-                    color: 'var(--text-muted)',
-                    minWidth: '80px',
-                    flexShrink: 0,
-                    textAlign: 'right',
-                  }}
-                >
-                  {sf.label}
-                </span>
-                <input
-                  type="text"
-                  value={item[sf.id] ?? ''}
-                  onChange={(e) => updateItem(idx, sf.id, e.target.value)}
-                  placeholder={sf.placeholder}
-                  className="input-field input-mono"
-                  style={{ flex: 1, padding: '5px 8px', fontSize: '12px' }}
-                />
+              <div key={sf.id}>
+                {sf.type === 'file' ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '11px',
+                        color: 'var(--text-muted)',
+                      }}
+                    >
+                      {sf.label}
+                    </span>
+                    <FileField
+                      files={files[idx]?.[sf.id] ?? []}
+                      onFilesChange={(f) => updateFiles(idx, sf.id, f)}
+                      accept={sf.accept}
+                      multiple={sf.multiple ?? true}
+                    />
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '11px',
+                        color: 'var(--text-muted)',
+                        minWidth: '80px',
+                        flexShrink: 0,
+                        textAlign: 'right',
+                      }}
+                    >
+                      {sf.label}
+                    </span>
+                    <input
+                      type="text"
+                      value={item[sf.id] ?? ''}
+                      onChange={(e) => updateItem(idx, sf.id, e.target.value)}
+                      placeholder={sf.placeholder}
+                      className="input-field input-mono"
+                      style={{ flex: 1, padding: '5px 8px', fontSize: '12px' }}
+                    />
+                  </div>
+                )}
               </div>
             ))}
           </div>
