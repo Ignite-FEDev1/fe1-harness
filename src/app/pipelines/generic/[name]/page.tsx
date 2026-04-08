@@ -87,15 +87,37 @@ export default function GenericPipelinePage() {
     router.push('/pipelines');
   };
 
-  const handleAiApply = useCallback((text: string) => {
+  const handleAiApply = useCallback(async (text: string) => {
     try {
       const parsed = JSON.parse(text);
+      // Update local state
+      const newStages = Array.isArray(parsed.stages) ? parsed.stages : stages;
+      const newLabel = parsed.label !== undefined ? parsed.label : label;
+      const newDescription = parsed.description !== undefined ? parsed.description : description;
+      const newInputSchema = parsed.inputSchema !== undefined ? parsed.inputSchema : inputSchema;
+
       if (Array.isArray(parsed.stages)) setStages(parsed.stages);
       if (parsed.label !== undefined) setLabel(parsed.label);
       if (parsed.description !== undefined) setDescription(parsed.description);
       if (parsed.inputSchema !== undefined) setInputSchema(parsed.inputSchema);
+
+      // Auto-save to filesystem
+      setSaving(true);
+      await fetch(`/api/pipelines/generic/${encodeURIComponent(name)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          stages: newStages,
+          label: newLabel,
+          description: newDescription,
+          inputSchema: newInputSchema,
+        }),
+      });
+      setSaving(false);
+      setSaveMsg('적용 · 저장됨');
+      setTimeout(() => setSaveMsg(''), 2000);
     } catch { /* ignore invalid JSON */ }
-  }, []);
+  }, [name, stages, label, description, inputSchema]);
 
   return (
     <div className="flex flex-col" style={{ height: '100%', overflow: 'hidden' }}>
