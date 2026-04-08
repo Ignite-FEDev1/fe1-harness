@@ -220,16 +220,19 @@ export default function GenericPipelinePage() {
                         field.type === 'repeat-group' ? '#a78bfa' :
                         field.type === 'checkbox' ? 'var(--accent-green)' :
                         field.type === 'radio' ? 'var(--accent-cyan)' :
+                        field.type === 'file' ? '#fb923c' :
                         'var(--text-muted)';
                       const accentBg =
                         field.type === 'repeat-group' ? 'rgba(139,92,246,0.1)' :
                         field.type === 'checkbox' ? 'rgba(0,230,118,0.1)' :
                         field.type === 'radio' ? 'rgba(0,229,255,0.1)' :
+                        field.type === 'file' ? 'rgba(251,146,60,0.1)' :
                         'var(--bg-surface)';
                       const accentBorder =
                         field.type === 'repeat-group' ? 'rgba(139,92,246,0.25)' :
                         field.type === 'checkbox' ? 'rgba(0,230,118,0.25)' :
                         field.type === 'radio' ? 'rgba(0,229,255,0.25)' :
+                        field.type === 'file' ? 'rgba(251,146,60,0.25)' :
                         'var(--border-dim)';
                       return (
                         <div key={field.id} style={{ padding: '8px 10px', background: 'var(--bg-raised)', border: '1px solid var(--border-dim)', borderRadius: '5px' }}>

@@ -5,3 +5,4 @@ export { TextareaField } from './TextareaField';
 export { RepeatGroupField } from './RepeatGroupField';
 export { CheckboxField } from './CheckboxField';
 export { RadioField } from './RadioField';
+export { FileField } from './FileField';

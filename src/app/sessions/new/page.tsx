@@ -12,6 +12,7 @@ import {
   RepeatGroupField,
   CheckboxField,
   RadioField,
+  FileField,
   type InputField,
   type InputSchema,
   type FieldValue,
@@ -54,6 +55,8 @@ export default function NewSessionPage() {
 
   // Dynamic field values
   const [fieldValues, setFieldValues] = useState<Record<string, FieldValue>>({});
+  // File state (separate because File objects can't serialize to JSON)
+  const [fileState, setFileState] = useState<Record<string, File[]>>({});
 
   // Legacy fields (when no schema)
   const [branchName, setBranchName] = useState('');
@@ -85,6 +88,7 @@ export default function NewSessionPage() {
     if (!selectedGeneric) {
       setInputSchema(null);
       setFieldValues({});
+      setFileState({});
       return;
     }
     setSchemaLoading(true);
@@ -106,6 +110,9 @@ export default function NewSessionPage() {
               init[f.id] = [];
             } else if (f.type === 'checkbox') {
               init[f.id] = typeof f.default === 'boolean' ? f.default : false;
+            } else if (f.type === 'file') {
+              // File fields use fileState, not fieldValues
+              init[f.id] = ''; // placeholder — actual files in fileState
             } else if (f.type === 'radio') {
               init[f.id] = typeof f.default === 'string'
                 ? f.default
@@ -193,6 +200,41 @@ export default function NewSessionPage() {
 
       const session = await res.json();
 
+      // Upload files (if any file fields have files)
+      const hasFiles = Object.values(fileState).some((files) => files.length > 0);
+      if (hasFiles) {
+        const filePathsByField: Record<string, string[]> = {};
+        for (const [fieldId, files] of Object.entries(fileState)) {
+          if (files.length === 0) continue;
+          const fd = new FormData();
+          files.forEach((f) => fd.append('files', f));
+          fd.append('fieldId', fieldId);
+          const uploadRes = await fetch(`/api/sessions/${session.id}/upload`, {
+            method: 'POST',
+            body: fd,
+          });
+          if (uploadRes.ok) {
+            const uploadData = await uploadRes.json();
+            filePathsByField[fieldId] = uploadData.paths;
+          }
+        }
+
+        // Merge file paths into pipeline_inputs
+        if (Object.keys(filePathsByField).length > 0) {
+          const updatedInputs = { ...(pipeline_inputs ?? {}), ...filePathsByField };
+          await fetch(`/api/sessions/${session.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              form_data: {
+                ...session.form_data,
+                pipeline_inputs: updatedInputs,
+              },
+            }),
+          });
+        }
+      }
+
       // Auto-run
       fetch(`/api/sessions/${session.id}/run`, {
         method: 'POST',
@@ -225,8 +267,9 @@ export default function NewSessionPage() {
               )
             );
           }
-          if (f.type === 'checkbox') return true; // checkbox always satisfies required (has default value)
+          if (f.type === 'checkbox') return true;
           if (f.type === 'radio') return typeof v === 'string' && v.length > 0;
+          if (f.type === 'file') return (fileState[f.id]?.length ?? 0) > 0;
           if (Array.isArray(v)) return v.some((s) => typeof s === 'string' && s.trim());
           return typeof v === 'string' && v.trim();
         })
@@ -582,6 +625,14 @@ export default function NewSessionPage() {
                         value={(fieldValues[field.id] as string) ?? ''}
                         onChange={(v) => setFieldValue(field.id, v)}
                         options={field.options}
+                      />
+                    )}
+                    {field.type === 'file' && (
+                      <FileField
+                        files={fileState[field.id] ?? []}
+                        onFilesChange={(files) => setFileState((prev) => ({ ...prev, [field.id]: files }))}
+                        accept={field.accept}
+                        multiple={field.multiple ?? true}
                       />
                     )}
                   </div>

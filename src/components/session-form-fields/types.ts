@@ -13,7 +13,8 @@ export type InputFieldType =
   | 'text-list'
   | 'repeat-group'
   | 'checkbox'
-  | 'radio';
+  | 'radio'
+  | 'file';
 
 export interface InputField {
   id: string;
@@ -29,6 +30,10 @@ export interface InputField {
   default?: string | boolean;
   /** Helper text shown below the field (used by `checkbox`) */
   description?: string;
+  /** File type filter for `file` type (e.g. "image/*", ".png,.jpg,.pdf") */
+  accept?: string;
+  /** Allow multiple files for `file` type (default: true) */
+  multiple?: boolean;
 }
 
 export interface InputSchema {

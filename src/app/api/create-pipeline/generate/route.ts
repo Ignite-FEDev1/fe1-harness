@@ -43,7 +43,7 @@ const USER_PROMPT_FOOTER = `
     {
       "id": "field_id",
       "label": "표시 레이블",
-      "type": "text | textarea | url-list | text-list | url | repeat-group | checkbox | radio",
+      "type": "text | textarea | url-list | text-list | url | repeat-group | checkbox | radio | file",
       "required": true,
       "placeholder": "입력 예시",
       "fields": [{ "id": "sub_id", "label": "하위 필드", "type": "text", "placeholder": "예시" }],
@@ -105,9 +105,16 @@ description: 단계 한 줄 설명
           ],
           "default": "per_ticket" }
 
+- file: 파일 업로드 (이미지, 문서 등). 드래그앤드롭 UI로 업로드됨.
+  "accept"로 파일 타입 제한 가능, "multiple"로 복수 파일 허용 (기본 true).
+  Agent는 업로드된 파일을 Read 도구로 열어 확인 (이미지도 읽기 가능).
+  예시: { "id": "screenshots", "label": "스크린샷", "type": "file", "required": true,
+          "accept": "image/*", "multiple": true }
+
 중요: 사용자에게 JSON을 직접 입력하라고 요구하지 마세요.
 N개의 구조화된 항목은 반드시 repeat-group을 사용하세요.
 on/off 옵션은 checkbox, 2~4개 중 하나 선택은 radio를 사용하세요.
+파일/이미지 첨부가 필요하면 file을 사용하세요.
 textarea는 자유 형식 텍스트에만 사용합니다.
 
 ## 병렬 실행 설계 원칙
