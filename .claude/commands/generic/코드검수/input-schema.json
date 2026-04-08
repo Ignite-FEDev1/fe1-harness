@@ -1,0 +1,60 @@
+{
+  "fields": [
+    {
+      "id": "branch",
+      "label": "브랜치명",
+      "type": "text",
+      "required": true,
+      "placeholder": "예: feature/my-feature, main"
+    },
+    {
+      "id": "commit_hashes",
+      "label": "커밋 해시 목록",
+      "type": "text-list",
+      "required": false,
+      "placeholder": "예: abc1234 (비워두면 브랜치 전체 diff 사용)"
+    },
+    {
+      "id": "review_simplify",
+      "label": "Simplify (리팩터링/단순화)",
+      "type": "checkbox",
+      "default": true,
+      "description": "Claude /simplify 기능으로 코드 복잡도·중복을 점검합니다"
+    },
+    {
+      "id": "review_clean_code",
+      "label": "클린 코드 (네이밍, 함수 분리, 중복 제거)",
+      "type": "checkbox",
+      "default": true,
+      "description": "Robert C. Martin의 Clean Code 원칙 기준으로 가독성·유지보수성을 점검합니다"
+    },
+    {
+      "id": "review_security",
+      "label": "보안 (취약점, 민감 데이터 노출)",
+      "type": "checkbox",
+      "default": true,
+      "description": "OWASP Top 10 기준으로 보안 취약점과 민감 정보 노출 여부를 점검합니다"
+    },
+    {
+      "id": "review_performance",
+      "label": "성능 (불필요한 렌더링, 비효율 알고리즘)",
+      "type": "checkbox",
+      "default": true,
+      "description": "렌더링 비용, 메모이제이션 누락, 비효율적인 알고리즘을 점검합니다"
+    },
+    {
+      "id": "review_type_safety",
+      "label": "타입 안전성 (any 남용, 타입 누락)",
+      "type": "checkbox",
+      "default": true,
+      "description": "TypeScript any 남용, 타입 누락, 불안전한 단언(as)을 점검합니다"
+    },
+    {
+      "id": "review_accessibility",
+      "label": "접근성 (aria, 키보드 네비게이션)",
+      "type": "checkbox",
+      "default": true,
+      "description": "WCAG 2.1 AA 기준으로 aria 속성·키보드 접근성을 점검합니다"
+    }
+  ]
+}
