@@ -9,6 +9,7 @@ import { useSessionStream } from '@/hooks/useSessionStream';
 interface StreamingViewProps {
   sessionId: string;
   onRun: (additionalNotes?: string) => void;
+  onFollowUp?: (message: string) => void;
   sessionStatus: string;
   stages: PipelineStage[];
   initialStageId?: string | null;
@@ -27,6 +28,7 @@ const STATUS_DISPLAY: Record<string, { label: string; color: string }> = {
 export function StreamingView({
   sessionId,
   onRun,
+  onFollowUp,
   sessionStatus,
   stages,
   initialStageId,
@@ -233,7 +235,9 @@ export function StreamingView({
             onChange={(e) => setAdditionalNotes(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && additionalNotes.trim()) {
-                handleReRun();
+                onFollowUp?.(additionalNotes.trim());
+                setAdditionalNotes('');
+                setTimeout(() => reconnect(), 500);
               }
             }}
             placeholder="후속 요청을 입력하세요 — Cmd+Enter로 전송"
@@ -242,7 +246,12 @@ export function StreamingView({
             style={{ flex: 1, resize: 'none', lineHeight: '1.6' }}
           />
           <button
-            onClick={handleReRun}
+            onClick={() => {
+              if (!additionalNotes.trim()) return;
+              onFollowUp?.(additionalNotes.trim());
+              setAdditionalNotes('');
+              setTimeout(() => reconnect(), 500);
+            }}
             disabled={!additionalNotes.trim()}
             style={{
               padding: '8px 14px',
@@ -250,7 +259,7 @@ export function StreamingView({
               fontSize: '12px',
               fontWeight: 700,
               borderRadius: '5px',
-              background: additionalNotes.trim() ? 'var(--accent-green)' : 'var(--border-base)',
+              background: additionalNotes.trim() ? 'var(--accent-cyan)' : 'var(--border-base)',
               color: additionalNotes.trim() ? 'var(--bg-void)' : 'var(--text-muted)',
               border: 'none',
               cursor: additionalNotes.trim() ? 'pointer' : 'not-allowed',
@@ -259,7 +268,7 @@ export function StreamingView({
               alignSelf: 'flex-end',
             }}
           >
-            ▶
+            SEND
           </button>
         </div>
       )}

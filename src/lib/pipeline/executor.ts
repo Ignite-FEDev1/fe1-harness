@@ -477,3 +477,141 @@ export async function executePipeline(options: {
     }
   }
 }
+
+// ── Follow-up: resume a completed Claude session ──────────────────────
+
+export async function followUpSession(options: {
+  sessionId: string;
+  claudeSessionId: string;
+  message: string;
+  apiMode: string;
+  model?: string;
+}) {
+  const { sessionId, claudeSessionId, message, apiMode, model } = options;
+  const supabase = createServerClient();
+  const harnessRoot = process.cwd();
+
+  // Update status to running
+  await supabase
+    .from('sessions')
+    .update({ status: 'running', updated_at: new Date().toISOString() })
+    .eq('id', sessionId);
+
+  pipelineEventBus.emit(sessionId, 'status', { status: 'running' });
+  pipelineEventBus.emit(sessionId, 'log', {
+    content: `[후속 요청] ${message}`,
+    timestamp: new Date().toISOString(),
+  });
+  await supabase.from('session_logs').insert({
+    session_id: sessionId,
+    content: `[후속 요청] ${message}`,
+    event_type: 'log',
+  });
+
+  // Build env
+  const sdkEnv: Record<string, string | undefined> = { ...process.env };
+  if (apiMode === 'claude-max') {
+    delete sdkEnv.ANTHROPIC_API_KEY;
+    delete sdkEnv.ANTHROPIC_BASE_URL;
+  }
+
+  const requestedModel = model ?? 'claude-sonnet-4-6';
+
+  try {
+    const q = query({
+      prompt: message,
+      options: {
+        resume: claudeSessionId,
+        cwd: harnessRoot,
+        env: sdkEnv,
+        allowedTools: [
+          'Read', 'Glob', 'Grep', 'Bash', 'Agent', 'Write', 'Edit', 'WebFetch',
+          'mcp__Framelink-MCP-for-Figma__get_figma_data',
+          'mcp__Framelink-MCP-for-Figma__download_figma_images',
+        ],
+        permissionMode: 'bypassPermissions',
+        model: requestedModel,
+      },
+    });
+
+    setActiveQuery(sessionId, q);
+
+    for await (const msg of q) {
+      if (isSessionStopped(sessionId)) {
+        break;
+      }
+
+      const sdkMsg = msg as unknown as SDKMessage;
+      let content = '';
+
+      if (sdkMsg.type === 'assistant') {
+        content = extractTextFromMessage(sdkMsg);
+      } else if (sdkMsg.type === 'user') {
+        content = extractToolResults(sdkMsg);
+      } else if (sdkMsg.type === 'result') {
+        if (sdkMsg.is_error) {
+          content = `[후속 완료] 실패`;
+        } else {
+          const cost = sdkMsg.total_cost_usd;
+          content = `[후속 완료] 성공 (${cost != null ? `$${cost.toFixed(4)}` : '비용 미제공'}, ${sdkMsg.num_turns ?? 0}턴)`;
+        }
+        if (sdkMsg.session_id) {
+          await supabase
+            .from('sessions')
+            .update({ claude_session_id: sdkMsg.session_id })
+            .eq('id', sessionId);
+        }
+      }
+
+      if (!content.trim()) continue;
+
+      const timestamp = new Date().toISOString();
+      pipelineEventBus.emit(sessionId, 'log', { content, timestamp });
+      await supabase.from('session_logs').insert({
+        session_id: sessionId,
+        content,
+        event_type: 'log',
+      });
+
+      // Detect user gate
+      if (detectUserGate(content)) {
+        pipelineEventBus.emit(sessionId, 'usergate', {
+          prompt: extractUserGatePrompt(content),
+        });
+        await supabase
+          .from('sessions')
+          .update({ status: 'paused' })
+          .eq('id', sessionId);
+        pipelineEventBus.emit(sessionId, 'status', { status: 'paused' });
+      }
+    }
+
+    // Mark completed
+    if (!isSessionStopped(sessionId)) {
+      await supabase
+        .from('sessions')
+        .update({ status: 'completed', updated_at: new Date().toISOString() })
+        .eq('id', sessionId);
+      pipelineEventBus.emit(sessionId, 'status', { status: 'completed' });
+    } else {
+      clearStopFlag(sessionId);
+      await supabase
+        .from('sessions')
+        .update({ status: 'stopped', updated_at: new Date().toISOString() })
+        .eq('id', sessionId);
+      pipelineEventBus.emit(sessionId, 'status', { status: 'stopped' });
+    }
+
+    pipelineEventBus.emit(sessionId, 'done', {});
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    await supabase
+      .from('sessions')
+      .update({ status: 'error', error_message: errorMessage, updated_at: new Date().toISOString() })
+      .eq('id', sessionId);
+    pipelineEventBus.emit(sessionId, 'status', { status: 'error', error: errorMessage });
+    pipelineEventBus.emit(sessionId, 'done', {});
+  } finally {
+    removeActiveQuery(sessionId);
+  }
+}

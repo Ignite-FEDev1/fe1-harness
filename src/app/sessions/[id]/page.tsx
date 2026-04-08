@@ -149,6 +149,25 @@ export default function SessionDetailPage({
     }
   };
 
+  const handleFollowUp = async (message: string) => {
+    const formApiMode =
+      (session?.form_data?.api_mode as string | undefined) ?? apiMode;
+
+    const res = await fetch(`/api/sessions/${id}/follow-up`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message,
+        userId: selectedUser?.id ?? null,
+        apiMode: formApiMode,
+        model: currentModel,
+      }),
+    });
+    if (res.ok) {
+      setSession((prev) => (prev ? { ...prev, status: 'running' } : prev));
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -234,6 +253,7 @@ export default function SessionDetailPage({
         <StreamingView
           sessionId={id}
           onRun={handleRun}
+          onFollowUp={handleFollowUp}
           sessionStatus={session.status}
           stages={stages}
           initialStageId={session.active_stage_id}
