@@ -134,7 +134,7 @@ async function handleHChat(
   try { controller.close(); } catch { /* */ }
 }
 
-// --- Claude Max: Local OAuth (~/.claude/) ---
+// --- Local Claude: ~/.claude/ 세션 사용 ---
 async function handleClaudeMax(
   message: string,
   controller: ReadableStreamDefaultController,
@@ -150,7 +150,7 @@ async function handleClaudeMax(
     }
   };
 
-  send('status', { apiMode: 'claude-max', baseUrl: 'api.anthropic.com (OAuth)' });
+  send('status', { apiMode: 'claude-max', baseUrl: 'Local Claude' });
 
   try {
     // No ANTHROPIC_API_KEY override — SDK picks up ~/.claude/ session credentials
@@ -220,7 +220,7 @@ export async function POST(request: Request) {
   const hasHChat = !!userEnv.H_CHAT_TOKEN;
 
   // Determine which mode to use: respect explicit apiMode, fallback to availability
-  // claude-max always available (uses ~/.claude/ OAuth)
+  // claude-max always available (uses local ~/.claude/ session)
   type ResolvedMode = 'h-chat' | 'claude-max';
   let resolvedMode: ResolvedMode;
   if (apiMode === 'h-chat' && hasHChat) {

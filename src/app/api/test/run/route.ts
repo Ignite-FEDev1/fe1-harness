@@ -12,7 +12,7 @@ const H_CHAT_CONFIG = {
 
 const MODE_LABELS: Record<ApiMode, string> = {
   'h-chat': 'H-Chat (회사 내부)',
-  'claude-max': 'Claude Max (로컬 OAuth)',
+  'claude-max': 'Local Claude (로컬 세션)',
 };
 
 export async function POST(request: Request) {

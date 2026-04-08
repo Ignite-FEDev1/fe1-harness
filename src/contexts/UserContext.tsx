@@ -52,8 +52,8 @@ export const API_MODE_META: Record<ApiMode, { label: string; desc: string; color
     border: 'rgba(245,158,11,0.3)',
   },
   'claude-max': {
-    label: 'CLAUDE MAX',
-    desc: '로컬 OAuth 세션',
+    label: 'LOCAL CLAUDE',
+    desc: '로컬 Claude Code 세션',
     color: 'var(--accent-green)',
     bg: 'var(--accent-green-subtle)',
     border: 'var(--accent-green-glow)',
@@ -155,7 +155,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const selectedUser = users.find((u) => u.id === selectedUserId) ?? null;
 
-  // Determine available modes — claude-max is always available (local OAuth)
+  // Determine available modes — claude-max is always available (local Claude Code)
   const availableModes: ApiMode[] = ['claude-max'];
   if (selectedUser) {
     if (selectedUser.tokens.H_CHAT_TOKEN?.masked) availableModes.unshift('h-chat');

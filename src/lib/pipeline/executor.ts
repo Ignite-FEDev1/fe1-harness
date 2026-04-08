@@ -168,7 +168,7 @@ export async function executePipeline(options: {
     sdkEnv.DISABLE_AUTOUPDATER = H_CHAT_CONFIG.DISABLE_AUTOUPDATER;
     // CLAUDE_CONFIG_DIR 미사용: ~/.claude-h/settings.json에 한글 플레이스홀더 → ByteString 에러
   } else if (apiMode === 'claude-max') {
-    // Claude Max: API 키 주입 없이 ~/.claude/ OAuth 세션 그대로 사용
+    // Local Claude: API 키 주입 없이 ~/.claude/ 세션 그대로 사용
     delete sdkEnv.ANTHROPIC_API_KEY;
     delete sdkEnv.ANTHROPIC_BASE_URL;
   }
@@ -203,7 +203,7 @@ export async function executePipeline(options: {
 
   pipelineEventBus.emit(sessionId, 'status', { status: 'running' });
   pipelineEventBus.emit(sessionId, 'log', {
-    content: `[시스템] API 모드: ${{ 'h-chat': 'H-Chat (회사 내부)', 'claude-max': 'Claude Max (로컬 OAuth)' }[apiMode]}`,
+    content: `[시스템] API 모드: ${{ 'h-chat': 'H-Chat (회사 내부)', 'claude-max': 'Local Claude (로컬 세션)' }[apiMode]}`,
     timestamp: new Date().toISOString(),
   });
 

@@ -476,9 +476,8 @@ export default function NewSessionPage() {
               <div style={{ display: 'flex', gap: '6px' }}>
                 {(
                   [
-                    { value: 'claude-max', label: 'MAX' },
+                    { value: 'claude-max', label: 'LOCAL' },
                     { value: 'h-chat', label: 'H-CHAT' },
-                    { value: 'anthropic', label: 'API' },
                   ] as const
                 ).map((opt) => (
                   <button
