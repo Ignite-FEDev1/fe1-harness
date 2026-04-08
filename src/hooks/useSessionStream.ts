@@ -129,5 +129,10 @@ export function useSessionStream(sessionId: string | null, initialStageId?: stri
     setState((prev) => ({ ...prev, logs: [] }));
   }, []);
 
-  return { ...state, logsEndRef, clearLogs };
+  /** Reconnect SSE after re-run — clears old logs and opens fresh connection. */
+  const reconnect = useCallback(() => {
+    connect(true);
+  }, [connect]);
+
+  return { ...state, logsEndRef, clearLogs, reconnect };
 }

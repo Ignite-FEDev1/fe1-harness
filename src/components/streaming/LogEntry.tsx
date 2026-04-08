@@ -1,5 +1,56 @@
 'use client';
 
+/** Detect absolute file paths and wrap them in clickable links. */
+function renderWithPaths(text: string) {
+  // Match absolute paths like /Users/.../file.md or /home/.../file.ts
+  const pathRegex = /(\/(?:Users|home|tmp|var|opt|etc)[^\s,;)}\]]+)/g;
+  const parts: (string | { path: string; key: number })[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let key = 0;
+
+  while ((match = pathRegex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    parts.push({ path: match[1], key: key++ });
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  if (parts.length === 1 && typeof parts[0] === 'string') {
+    return text; // no paths found
+  }
+
+  return parts.map((part) => {
+    if (typeof part === 'string') return part;
+    return (
+      <a
+        key={part.key}
+        href={`vscode://file${part.path}`}
+        title={`VS Code에서 열기: ${part.path}`}
+        style={{
+          color: 'inherit',
+          textDecoration: 'underline',
+          textDecorationColor: 'rgba(255,255,255,0.25)',
+          textUnderlineOffset: '2px',
+          cursor: 'pointer',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.textDecorationColor = 'var(--accent-cyan)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.textDecorationColor = 'rgba(255,255,255,0.25)';
+        }}
+      >
+        {part.path}
+      </a>
+    );
+  });
+}
+
 interface LogEntryProps {
   content: string;
   timestamp: string;
@@ -97,12 +148,12 @@ export function LogEntry({ content, timestamp }: LogEntryProps) {
       )}
       {!prefix && <span className="flex-shrink-0 w-11" />}
 
-      {/* Content */}
+      {/* Content — file paths are clickable (opens in VS Code) */}
       <pre
         className="whitespace-pre-wrap break-all flex-1"
         style={{ color: textColor }}
       >
-        {content}
+        {renderWithPaths(content)}
       </pre>
     </div>
     </div>

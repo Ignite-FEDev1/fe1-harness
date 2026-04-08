@@ -32,7 +32,7 @@ export function StreamingView({
   initialStageId,
   onClaudeSessionId,
 }: StreamingViewProps) {
-  const { logs, activeStageId, status, userGatePrompt, isConnected, claudeSessionId } =
+  const { logs, activeStageId, status, userGatePrompt, isConnected, claudeSessionId, reconnect } =
     useSessionStream(sessionId, initialStageId);
 
   useEffect(() => {
@@ -63,6 +63,8 @@ export function StreamingView({
   const handleReRun = () => {
     onRun(additionalNotes.trim() || undefined);
     setAdditionalNotes('');
+    // SSE 재연결 — 새 실행의 로그를 받기 위해
+    setTimeout(() => reconnect(), 500);
   };
 
   return (
@@ -124,7 +126,7 @@ export function StreamingView({
           {/* Run / Re-run button */}
           {canRun && (
             <button
-              onClick={() => onRun()}
+              onClick={() => { onRun(); setTimeout(() => reconnect(), 500); }}
               className="px-4 py-1 text-xs font-semibold rounded transition-all"
               style={{
                 fontFamily: 'var(--font-mono)',
