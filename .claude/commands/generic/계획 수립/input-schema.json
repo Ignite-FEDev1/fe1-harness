@@ -1,0 +1,38 @@
+{
+  "fields": [
+    {
+      "id": "notes",
+      "label": "작업 배경 / 요구사항",
+      "type": "textarea",
+      "required": true,
+      "placeholder": "어떤 기능을 만들어야 하는지, 배경, 기획 내용 등을 자유롭게 입력"
+    },
+    {
+      "id": "confluence_urls",
+      "label": "기획서 URL",
+      "type": "url-list",
+      "required": false,
+      "placeholder": "https://*.atlassian.net/wiki/..."
+    },
+    {
+      "id": "api_doc_urls",
+      "label": "API 설계 문서 URL",
+      "type": "url-list",
+      "required": false,
+      "placeholder": "https://..."
+    },
+    {
+      "id": "figma_urls",
+      "label": "Figma URL",
+      "type": "url-list",
+      "required": false,
+      "placeholder": "https://www.figma.com/..."
+    },
+    {
+      "id": "swagger_urls",
+      "label": "Swagger URL",
+      "type": "url-list",
+      "required": false
+    }
+  ]
+}

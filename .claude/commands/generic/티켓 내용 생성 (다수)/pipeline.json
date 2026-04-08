@@ -1,0 +1,10 @@
+{
+  "label": "티켓 생성 (다수)",
+  "description": "작업 배경을 분석하여 코드베이스 기반 티켓 분해 + 공수 산정 + Jira 형식 출력",
+  "stages": [
+    {
+      "id": "write-tickets",
+      "label": "티켓 분해 및 작성"
+    }
+  ]
+}

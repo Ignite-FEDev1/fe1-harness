@@ -1,0 +1,53 @@
+{
+  "fields": [
+    {
+      "id": "tickets",
+      "label": "QA 티켓 목록",
+      "type": "repeat-group",
+      "required": true,
+      "fields": [
+        {
+          "id": "ticket_url",
+          "label": "티켓 링크",
+          "type": "text",
+          "placeholder": "https://jira.example.com/browse/TICKET-123"
+        },
+        {
+          "id": "branch",
+          "label": "작업 브랜치명",
+          "type": "text",
+          "placeholder": "fix/design-qa-ticket-123"
+        },
+        {
+          "id": "image_files",
+          "label": "이미지 파일 첨부",
+          "type": "file",
+          "required": false,
+          "accept": "image/*",
+          "multiple": true
+        },
+        {
+          "id": "image_url",
+          "label": "이미지 URL 또는 Figma 링크",
+          "type": "text",
+          "required": false,
+          "placeholder": "https://www.figma.com/file/... 또는 이미지 URL"
+        }
+      ]
+    },
+    {
+      "id": "base_branch",
+      "label": "베이스 브랜치명",
+      "type": "text",
+      "required": true,
+      "placeholder": "main 또는 develop"
+    },
+    {
+      "id": "merge_branch",
+      "label": "최종 머지 브랜치명",
+      "type": "text",
+      "required": true,
+      "placeholder": "release/design-qa-batch-1"
+    }
+  ]
+}

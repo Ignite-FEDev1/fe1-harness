@@ -1,0 +1,7 @@
+{
+  "label": "구현",
+  "description": "개발 요청을 받아 코드베이스 컨벤션에 맞게 구현하고 검수",
+  "stages": [
+    { "id": "implement", "label": "구현" }
+  ]
+}

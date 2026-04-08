@@ -1,0 +1,39 @@
+{
+  "fields": [
+    {
+      "id": "notes",
+      "label": "작업 내용",
+      "type": "textarea",
+      "required": true,
+      "placeholder": "[배경]\n작업이 필요한 이유\n\n[작업 내용]\n구현해야 할 기능\n\n[기획서] (생략 가능)\n기획 요약\n\n[참고사항] (생략 가능)\nAPI 설계 상황, 일정 제약 등"
+    },
+    {
+      "id": "ticket_prefix",
+      "label": "티켓 접두어",
+      "type": "text",
+      "required": false,
+      "placeholder": "[HB] [글로벌 대응]"
+    },
+    {
+      "id": "project_path",
+      "label": "참고 코드베이스 경로",
+      "type": "text",
+      "required": false,
+      "placeholder": "/Users/.../my-project (비우면 좌측 프로젝트 설정 사용)"
+    },
+    {
+      "id": "confluence_urls",
+      "label": "기획서 URL",
+      "type": "url-list",
+      "required": false,
+      "placeholder": "https://*.atlassian.net/wiki/..."
+    },
+    {
+      "id": "api_doc_urls",
+      "label": "API 설계 문서 URL",
+      "type": "url-list",
+      "required": false,
+      "placeholder": "https://..."
+    }
+  ]
+}

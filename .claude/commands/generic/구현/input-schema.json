@@ -1,0 +1,32 @@
+{
+  "fields": [
+    {
+      "id": "notes",
+      "label": "개발 내용",
+      "type": "textarea",
+      "required": true,
+      "placeholder": "구현할 내용을 자유롭게 입력.\n티켓 내용 붙여넣기, 작업 설명, 참고사항 등."
+    },
+    {
+      "id": "project_path",
+      "label": "코드베이스 경로",
+      "type": "text",
+      "required": false,
+      "placeholder": "/Users/.../my-project (비우면 좌측 프로젝트 설정 사용)"
+    },
+    {
+      "id": "branch_name",
+      "label": "브랜치명",
+      "type": "text",
+      "required": false,
+      "placeholder": "feature/my-branch (비우면 현재 브랜치 사용)"
+    },
+    {
+      "id": "base_branch",
+      "label": "베이스 브랜치",
+      "type": "text",
+      "required": false,
+      "placeholder": "main"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "label": "티켓 생성",
+  "description": "작업 내용을 Jira 티켓 형식으로 정리하여 출력",
+  "stages": [
+    {
+      "id": "write-ticket",
+      "label": "티켓 작성"
+    }
+  ]
+}

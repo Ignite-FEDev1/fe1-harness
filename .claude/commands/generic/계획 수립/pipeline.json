@@ -1,0 +1,7 @@
+{
+  "label": "계획 수립",
+  "description": "기획서/설계문서를 분석하여 FE 작업 계획(plan.md) 생성",
+  "stages": [
+    { "id": "plan", "label": "계획 수립" }
+  ]
+}
