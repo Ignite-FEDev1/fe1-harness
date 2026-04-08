@@ -183,6 +183,7 @@ export default function NewSessionPage() {
         body: JSON.stringify({
           name: resolvedName,
           project_id: selectedProjectId || undefined,
+          user_id: selectedUser?.id ?? null,
           form_data: {
             generic_pipeline: selectedGeneric || undefined,
             special_rule: selectedSpecial || undefined,

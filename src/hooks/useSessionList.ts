@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
+import { useUser } from '@/contexts/UserContext';
 
 export interface SessionListItem {
   id: string;
@@ -17,10 +18,14 @@ export function useSessionList() {
   const [sessions, setSessions] = useState<SessionListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const pathname = usePathname();
+  const { selectedUser } = useUser();
 
   const fetchSessions = useCallback(async () => {
     try {
-      const res = await fetch('/api/sessions');
+      const url = selectedUser?.id
+        ? `/api/sessions?user_id=${encodeURIComponent(selectedUser.id)}`
+        : '/api/sessions';
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         setSessions(data);
@@ -30,7 +35,7 @@ export function useSessionList() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedUser?.id]);
 
   // Fetch on mount
   useEffect(() => {
