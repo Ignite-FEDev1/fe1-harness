@@ -104,7 +104,19 @@ export default function StagePage() {
           <div style={{ flex: 1, overflow: 'hidden', minWidth: 0 }}>
             <AiEditPanel
               context={{ type: 'stage', pipelineName: name, stageName: stage, getContent }}
-              onApply={(text) => setContent(text)}
+              onApply={async (text) => {
+                setContent(text);
+                // Auto-save to filesystem
+                setSaving(true);
+                await fetch(`/api/pipelines/generic/${encodeURIComponent(name)}/${encodeURIComponent(stage)}`, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ content: text }),
+                });
+                setSaving(false);
+                setSaveMsg('적용 · 저장됨');
+                setTimeout(() => setSaveMsg(''), 2000);
+              }}
             />
           </div>
         )}
