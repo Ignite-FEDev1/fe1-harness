@@ -31,11 +31,16 @@ const USER_PROMPT_FOOTER = `
 ===FILE: .claude/commands/generic/{파이프라인이름}/pipeline.json===
 {
   "stages": [
-    { "id": "sequential-stage", "label": "표시 이름" },
-    { "id": "parallel-stage", "label": "표시 이름", "parallel": "입력필드명" }
+    { "id": "sequential-stage", "label": "표시 이름 (한글 가능)" },
+    { "id": "parallel-stage", "label": "표시 이름 (한글 가능)", "parallel": "입력필드명" }
   ]
 }
 ===ENDFILE===
+
+⚠️ 스테이지 id 규칙 (필수):
+- 반드시 영문 소문자, 숫자, 하이픈(-)만 사용 (예: process-ticket, merge, final-review)
+- 한글 사용 금지 (❌ 병렬검수, ❌ 코드수정 → ✅ parallel-review, ✅ code-fix)
+- label은 한글 자유 (사용자에게 보이는 이름)
 
 ===FILE: .claude/commands/generic/{파이프라인이름}/input-schema.json===
 {
@@ -54,7 +59,7 @@ const USER_PROMPT_FOOTER = `
 }
 ===ENDFILE===
 
-각 단계별 .md 파일도 동일한 형식으로:
+각 단계별 .md 파일도 동일한 형식으로 (파일명 = stage id, 영문 소문자만):
 ===FILE: .claude/commands/generic/{파이프라인이름}/{stage-id}.md===
 ---
 description: 단계 한 줄 설명
