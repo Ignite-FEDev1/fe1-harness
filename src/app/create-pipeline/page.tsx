@@ -14,6 +14,14 @@ interface Message {
   content: string;
 }
 
+interface ConversationSummary {
+  id: string;
+  title: string;
+  status: string;
+  pipeline_name: string | null;
+  updated_at: string;
+}
+
 // ── Constants ─────────────────────────────────────────────────────────
 
 const READY_MARKER = '[READY_TO_GENERATE]';
@@ -58,6 +66,18 @@ function toApiMessages(msgs: Message[]): { role: 'user' | 'assistant'; content: 
 /** 텍스트에서 마커를 모두 제거해 표시용 텍스트 반환 */
 function stripMarkers(text: string): string {
   return text.replace(STEP_DONE_RE, '').replace(READY_MARKER, '').trimEnd();
+}
+
+/** 상대 시간 표시 */
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return '방금';
+  if (mins < 60) return `${mins}분 전`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}시간 전`;
+  const days = Math.floor(hours / 24);
+  return `${days}일 전`;
 }
 
 // ── Sub-components ────────────────────────────────────────────────────
@@ -190,6 +210,13 @@ export default function CreatePipelinePage() {
   const router = useRouter();
   const { selectedUser, apiMode } = useUser();
 
+  // ── Conversation persistence state ──
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [loadingConversations, setLoadingConversations] = useState(true);
+  const conversationIdRef = useRef<string | null>(null);
+
+  // ── Chat state ──
   const [messages, setMessages] = useState<Message[]>([OPENING]);
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
@@ -199,17 +226,131 @@ export default function CreatePipelinePage() {
   const [generateLog, setGenerateLog] = useState<string[]>([]);
   const [generatedName, setGeneratedName] = useState<string | null>(null);
 
-  const streamAccRef = useRef(''); // accumulates current stream chunk-by-chunk
+  const streamAccRef = useRef('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Keep ref in sync
+  useEffect(() => { conversationIdRef.current = conversationId; }, [conversationId]);
+
+  // ── Fetch conversation list on mount ──
+  useEffect(() => {
+    fetch('/api/pipeline-conversations')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setConversations(data);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingConversations(false));
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // ── Auto-save when streaming ends ──
+  const prevStreamingRef = useRef(false);
+  useEffect(() => {
+    if (prevStreamingRef.current && !streaming && conversationIdRef.current) {
+      const apiMsgs = toApiMessages(messages);
+      const steps = Array.from(doneSteps);
+      const title = messages.find((m) => m.role === 'user')?.content.slice(0, 50) || '새 파이프라인';
+      fetch(`/api/pipeline-conversations/${conversationIdRef.current}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: apiMsgs, done_steps: steps, title }),
+      }).then((res) => res.json()).then((updated) => {
+        if (updated?.id) {
+          setConversations((prev) =>
+            prev.map((c) => (c.id === updated.id ? { ...c, title: updated.title, updated_at: updated.updated_at } : c)),
+          );
+        }
+      }).catch(() => {});
+    }
+    prevStreamingRef.current = streaming;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [streaming]);
+
+  // ── Conversation lifecycle ──
+
+  const resetChatState = useCallback(() => {
+    setMessages([OPENING]);
+    setDoneSteps(new Set());
+    setReadyToGenerate(false);
+    setGeneratedName(null);
+    setGenerateLog([]);
+    setInput('');
+  }, []);
+
+  const startNewConversation = useCallback(() => {
+    setConversationId(null);
+    resetChatState();
+  }, [resetChatState]);
+
+  const loadConversation = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/pipeline-conversations/${id}`);
+      const data = await res.json();
+      if (!data || data.error) return;
+
+      setConversationId(data.id);
+      conversationIdRef.current = data.id;
+
+      const restored: Message[] = [OPENING, ...(data.messages || [])];
+      setMessages(restored);
+      setDoneSteps(new Set(data.done_steps || []));
+      setReadyToGenerate((data.done_steps || []).length >= STEPS.length);
+      setGeneratedName(data.pipeline_name || null);
+      setGenerateLog([]);
+      setInput('');
+    } catch { /* ignore */ }
+  }, []);
+
+  const deleteConversation = useCallback(async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    await fetch(`/api/pipeline-conversations/${id}`, { method: 'DELETE' });
+    setConversations((prev) => prev.filter((c) => c.id !== id));
+    if (conversationId === id) {
+      startNewConversation();
+    }
+  }, [conversationId, startNewConversation]);
+
+  // ── handleSend (with auto-create) ──
+
   const handleSend = useCallback(async () => {
     const trimmed = input.trim();
     if (!trimmed || streaming) return;
+
+    // Create conversation on first message if needed
+    let currentId = conversationIdRef.current;
+    if (!currentId) {
+      try {
+        const res = await fetch('/api/pipeline-conversations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: selectedUser?.id ?? null,
+            title: trimmed.slice(0, 50),
+          }),
+        });
+        const created = await res.json();
+        if (created?.id) {
+          currentId = created.id;
+          setConversationId(created.id);
+          conversationIdRef.current = created.id;
+          setConversations((prev) => [
+            {
+              id: created.id,
+              title: created.title,
+              status: created.status,
+              pipeline_name: null,
+              updated_at: created.updated_at,
+            },
+            ...prev,
+          ]);
+        }
+      } catch { /* proceed without persistence */ }
+    }
 
     const userMsg: Message = { role: 'user', content: trimmed };
     setMessages((prev) => [...prev, userMsg]);
@@ -373,6 +514,20 @@ export default function CreatePipelinePage() {
             } else if (event === 'done' && data.pipelineName) {
               setGeneratedName(data.pipelineName);
               setGenerating(false);
+              // Save generated status to DB
+              if (conversationIdRef.current) {
+                fetch(`/api/pipeline-conversations/${conversationIdRef.current}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ status: 'generated', pipeline_name: data.pipelineName }),
+                }).then((r) => r.json()).then((updated) => {
+                  if (updated?.id) {
+                    setConversations((prev) =>
+                      prev.map((c) => (c.id === updated.id ? { ...c, status: 'generated', pipeline_name: updated.pipeline_name } : c)),
+                    );
+                  }
+                }).catch(() => {});
+              }
               return;
             } else if (event === 'error' && data.message) {
               setGenerateLog((prev) => [...prev, `오류: ${data.message}`]);
@@ -401,14 +556,14 @@ export default function CreatePipelinePage() {
         <aside
           className="flex flex-col flex-shrink-0"
           style={{
-            width: '240px',
+            width: '260px',
             background: 'var(--bg-base)',
             borderRight: '1px solid var(--border-dim)',
             padding: '20px 16px',
           }}
         >
           {/* Title */}
-          <div style={{ marginBottom: '24px' }}>
+          <div style={{ marginBottom: '16px' }}>
             <div
               style={{
                 fontFamily: 'var(--font-mono)',
@@ -434,12 +589,155 @@ export default function CreatePipelinePage() {
             </div>
           </div>
 
+          {/* New conversation button */}
+          <button
+            onClick={startNewConversation}
+            style={{
+              width: '100%',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '12px',
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              padding: '8px 12px',
+              borderRadius: '5px',
+              border: '1px solid var(--accent-cyan)',
+              background: 'transparent',
+              color: 'var(--accent-cyan)',
+              cursor: 'pointer',
+              marginBottom: '16px',
+              transition: 'all 0.15s',
+            }}
+          >
+            + 새 대화
+          </button>
+
+          {/* Conversation history */}
+          <div
+            style={{
+              borderTop: '1px solid var(--border-dim)',
+              paddingTop: '12px',
+              flex: 1,
+              overflowY: 'auto',
+              minHeight: 0,
+            }}
+          >
+            <div
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '0.1em',
+                color: 'var(--text-muted)',
+                textTransform: 'uppercase',
+                marginBottom: '8px',
+              }}
+            >
+              대화 기록
+            </div>
+            {loadingConversations ? (
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-muted)', padding: '8px 0' }}>
+                불러오는 중...
+              </div>
+            ) : conversations.length === 0 ? (
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-muted)', padding: '8px 0', lineHeight: 1.5 }}>
+                저장된 대화가 없습니다
+              </div>
+            ) : (
+              conversations.map((conv) => (
+                <div
+                  key={conv.id}
+                  onClick={() => loadConversation(conv.id)}
+                  style={{
+                    padding: '8px 10px',
+                    borderRadius: '5px',
+                    cursor: 'pointer',
+                    background: conversationId === conv.id ? 'var(--bg-overlay)' : 'transparent',
+                    border: conversationId === conv.id ? '1px solid var(--border-base)' : '1px solid transparent',
+                    marginBottom: '4px',
+                    transition: 'all 0.15s',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '8px',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (conversationId !== conv.id) e.currentTarget.style.background = 'var(--bg-raised)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (conversationId !== conv.id) e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  {/* Status dot */}
+                  <div
+                    style={{
+                      width: '6px',
+                      height: '6px',
+                      borderRadius: '50%',
+                      background: conv.status === 'generated' ? 'var(--accent-green)' : 'var(--text-muted)',
+                      flexShrink: 0,
+                      marginTop: '5px',
+                    }}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '12px',
+                        color: 'var(--text-primary)',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {conv.title}
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '10px',
+                        color: 'var(--text-muted)',
+                        marginTop: '2px',
+                      }}
+                    >
+                      {timeAgo(conv.updated_at)}
+                      {conv.pipeline_name && (
+                        <span style={{ color: 'var(--accent-green)', marginLeft: '6px' }}>
+                          {conv.pipeline_name}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {/* Delete button */}
+                  <button
+                    onClick={(e) => deleteConversation(conv.id, e)}
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '11px',
+                      color: 'var(--text-muted)',
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: '0 2px',
+                      flexShrink: 0,
+                      opacity: 0.4,
+                      transition: 'opacity 0.15s',
+                      lineHeight: 1,
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.4'; }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+
           {/* Steps */}
           <div
             style={{
               borderTop: '1px solid var(--border-dim)',
               paddingTop: '16px',
-              flex: 1,
             }}
           >
             <div
