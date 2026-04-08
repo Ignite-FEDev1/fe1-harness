@@ -16,11 +16,11 @@ export const STAGE_LABELS: Record<string, string> = {
   'qa-review': 'QA 검수',
 };
 
-// Matches lowercase stage IDs like 📍 [plan], 📍 [develop-review], 📍 [my_stage]
+// Matches stage IDs like 📍 [plan], 📍 [develop-review], 📍 [병렬검수], 📍 [코드수정]
 // Also tolerates Claude adding bold markdown: 📍 **[plan]**
-// Does NOT match 📍 [INIT] (uppercase = system markers)
-// Does NOT match 📍 [parallel] (reserved keyword)
-const STAGE_MARKER_REGEX = /📍\s*\*{0,2}\[([a-z][a-z0-9_-]+)\]\*{0,2}/;
+// Supports: lowercase ascii, Korean (가-힣), digits, underscores, hyphens
+// Does NOT match 📍 [INIT] or 📍 [STEP ...] (uppercase-only = system markers)
+const STAGE_MARKER_REGEX = /📍\s*\*{0,2}\[((?=[^\]]*[a-z가-힣])[a-z가-힣0-9_-]+)\]\*{0,2}/;
 
 // Legacy step marker (kept for backward compat with old pipeline.md)
 const STEP_REGEX = /📍\s*\[STEP\s+(\d)\/4\]\s*(.+)/;
