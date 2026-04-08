@@ -224,9 +224,19 @@ export default function NewSessionPage() {
       // Repeat-group file sub-fields
       // Embed uploaded paths into each card's data: pipeline_inputs.{groupId}[cardIdx].{subFieldId} = [paths]
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let updatedPipelineInputs: Record<string, any> = { ...(pipeline_inputs ?? {}) };
+      const updatedPipelineInputs: Record<string, any> = { ...(pipeline_inputs ?? {}) };
       for (const [groupId, cardFiles] of Object.entries(repeatFileState)) {
-        const cards = (updatedPipelineInputs[groupId] as unknown as Record<string, unknown>[]) ?? [];
+        // repeat-group values are stored as JSON strings — parse them back
+        let cards: Record<string, unknown>[];
+        const raw = updatedPipelineInputs[groupId];
+        if (typeof raw === 'string') {
+          try { cards = JSON.parse(raw); } catch { cards = []; }
+        } else if (Array.isArray(raw)) {
+          cards = raw;
+        } else {
+          cards = [];
+        }
+
         for (const [cardIdxStr, subFields] of Object.entries(cardFiles)) {
           const cardIdx = Number(cardIdxStr);
           for (const [subFieldId, files] of Object.entries(subFields)) {
@@ -245,7 +255,8 @@ export default function NewSessionPage() {
             }
           }
         }
-        updatedPipelineInputs[groupId] = cards;
+        // Store back as JSON string (consistent with how repeat-group is serialized)
+        updatedPipelineInputs[groupId] = JSON.stringify(cards);
       }
 
       // Merge file paths into pipeline_inputs
