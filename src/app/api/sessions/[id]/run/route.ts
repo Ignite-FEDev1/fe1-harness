@@ -164,7 +164,6 @@ export async function POST(
     'H_CHAT_TOKEN',
     'GITLAB_EMAIL',
     'GITLAB_TOKEN',
-    'ANTHROPIC_API_KEY',
   ];
   for (const key of envKeys) {
     if (process.env[key]) {
@@ -177,15 +176,6 @@ export async function POST(
     const userTokens = await loadUserTokens(userId);
     Object.assign(envVars, userTokens);
 
-    // 3. Load harness-specific settings (ANTHROPIC_API_KEY)
-    const { data: settings } = await supabase
-      .from('user_settings')
-      .select('key, value')
-      .eq('user_id', userId);
-
-    for (const s of settings ?? []) {
-      if (s.value) envVars[s.key] = s.value;
-    }
   }
 
   // Extract pipeline config from form data
@@ -200,7 +190,7 @@ export async function POST(
     docsDir,
     harnessRoot,
     envVars,
-    apiMode: (apiMode as 'h-chat' | 'anthropic' | null) ?? undefined,
+    apiMode: (apiMode as 'h-chat' | null) ?? undefined,
     model,
     projectSlug,
     taskType,

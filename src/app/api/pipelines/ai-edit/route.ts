@@ -198,43 +198,6 @@ async function handleHChat(
   try { controller.close(); } catch { /* */ }
 }
 
-async function handleAnthropic(
-  messages: Message[],
-  systemPrompt: string,
-  apiKey: string,
-  model: string,
-  controller: ReadableStreamDefaultController,
-  encoder: TextEncoder,
-) {
-  const send = makeSender(controller, encoder);
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 8096,
-        system: systemPrompt,
-        messages,
-        stream: true,
-      }),
-    });
-    if (!res.ok) {
-      send('error', { message: `Anthropic API ${res.status}: ${(await res.text()).slice(0, 300)}` });
-    } else {
-      await parseAnthropicSse(res, send);
-    }
-  } catch (err) {
-    send('error', { message: err instanceof Error ? err.message : String(err) });
-  }
-  send('done', {});
-  try { controller.close(); } catch { /* */ }
-}
-
 async function handleClaudeMax(
   messages: Message[],
   systemPrompt: string,
@@ -328,16 +291,9 @@ export async function POST(request: Request) {
   const userEnv = userId ? await loadUserEnv(userId) : {};
   if (!userEnv.H_CHAT_TOKEN && process.env.H_CHAT_TOKEN)
     userEnv.H_CHAT_TOKEN = process.env.H_CHAT_TOKEN;
-  if (!userEnv.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY)
-    userEnv.ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-
-  type Mode = 'h-chat' | 'anthropic' | 'claude-max';
+  type Mode = 'h-chat' | 'claude-max';
   let mode: Mode;
   if (apiMode === 'h-chat' && userEnv.H_CHAT_TOKEN) mode = 'h-chat';
-  else if (apiMode === 'anthropic' && userEnv.ANTHROPIC_API_KEY) mode = 'anthropic';
-  else if (apiMode === 'claude-max') mode = 'claude-max';
-  else if (userEnv.H_CHAT_TOKEN) mode = 'h-chat';
-  else if (userEnv.ANTHROPIC_API_KEY) mode = 'anthropic';
   else mode = 'claude-max';
 
   const encoder = new TextEncoder();
@@ -345,8 +301,6 @@ export async function POST(request: Request) {
     start(controller) {
       if (mode === 'h-chat')
         handleHChat(messages, systemPrompt, userEnv.H_CHAT_TOKEN, resolvedModel, controller, encoder);
-      else if (mode === 'anthropic')
-        handleAnthropic(messages, systemPrompt, userEnv.ANTHROPIC_API_KEY, resolvedModel, controller, encoder);
       else
         handleClaudeMax(messages, systemPrompt, resolvedModel, controller, encoder);
     },

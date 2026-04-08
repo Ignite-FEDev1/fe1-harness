@@ -2,7 +2,7 @@ import { query } from '@anthropic-ai/claude-agent-sdk';
 import { readFileSync, mkdirSync } from 'fs';
 import path from 'path';
 
-type ApiMode = 'h-chat' | 'anthropic' | 'claude-max';
+type ApiMode = 'h-chat' | 'claude-max';
 
 const H_CHAT_CONFIG = {
   ANTHROPIC_BASE_URL: 'https://h-chat-api.autoever.com/claude-code/v2',
@@ -12,7 +12,6 @@ const H_CHAT_CONFIG = {
 
 const MODE_LABELS: Record<ApiMode, string> = {
   'h-chat': 'H-Chat (회사 내부)',
-  'anthropic': 'Anthropic API',
   'claude-max': 'Claude Max (로컬 OAuth)',
 };
 
@@ -73,26 +72,6 @@ export async function POST(request: Request) {
     sdkEnv.ANTHROPIC_BASE_URL = H_CHAT_CONFIG.ANTHROPIC_BASE_URL;
     sdkEnv.API_TIMEOUT_MS = H_CHAT_CONFIG.API_TIMEOUT_MS;
     sdkEnv.DISABLE_AUTOUPDATER = H_CHAT_CONFIG.DISABLE_AUTOUPDATER;
-  } else if (apiMode === 'anthropic') {
-    let anthropicKey = process.env.ANTHROPIC_API_KEY ?? '';
-    if (userId) {
-      const { createServerClient } = await import('@/lib/supabase/server');
-      const supabase = createServerClient();
-      const { data } = await supabase
-        .from('user_settings')
-        .select('value')
-        .eq('user_id', userId)
-        .eq('key', 'ANTHROPIC_API_KEY')
-        .single();
-      if (data?.value) anthropicKey = data.value;
-    }
-    if (!anthropicKey) {
-      return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY가 설정되지 않았습니다' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-    sdkEnv.ANTHROPIC_API_KEY = anthropicKey;
   } else {
     // claude-max: use ~/.claude/ OAuth — remove any injected API key
     delete sdkEnv.ANTHROPIC_API_KEY;
@@ -151,8 +130,7 @@ export async function POST(request: Request) {
               send('result', {
                 error: sdkMsg.is_error,
                 turns: sdkMsg.num_turns,
-                // only show cost for anthropic (actual billing)
-                cost: apiMode === 'anthropic' ? sdkMsg.total_cost_usd : undefined,
+                cost: sdkMsg.total_cost_usd,
               });
             }
           }

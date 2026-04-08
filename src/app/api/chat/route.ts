@@ -134,73 +134,6 @@ async function handleHChat(
   try { controller.close(); } catch { /* */ }
 }
 
-// --- Anthropic API key: Claude Agent SDK ---
-async function handleAnthropic(
-  message: string,
-  apiKey: string,
-  controller: ReadableStreamDefaultController,
-  encoder: TextEncoder,
-) {
-  const send = (event: string, data: unknown) => {
-    try {
-      controller.enqueue(
-        encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
-      );
-    } catch {
-      /* closed */
-    }
-  };
-
-  send('status', { apiMode: 'anthropic', baseUrl: 'api.anthropic.com' });
-
-  try {
-    const sdkEnv: Record<string, string | undefined> = {
-      ...process.env,
-      ANTHROPIC_API_KEY: apiKey,
-    };
-
-    const q = query({
-      prompt: message,
-      options: {
-        cwd: process.cwd(),
-        env: sdkEnv,
-        allowedTools: ['Read', 'Glob', 'Grep', 'Bash', 'WebFetch'],
-        permissionMode: 'bypassPermissions',
-        model: 'claude-sonnet-4-6',
-      },
-    });
-
-    for await (const msg of q) {
-      const sdkMsg = msg as unknown as {
-        type: string;
-        message?: {
-          content?: { type: string; text?: string; name?: string; input?: unknown }[];
-        };
-        is_error?: boolean;
-        total_cost_usd?: number;
-      };
-
-      if (sdkMsg.type === 'assistant') {
-        for (const block of sdkMsg.message?.content ?? []) {
-          if (block.type === 'text' && block.text) {
-            send('text', { content: block.text });
-          } else if (block.type === 'tool_use' && block.name) {
-            send('tool', { name: block.name, input: block.input });
-          }
-        }
-      } else if (sdkMsg.type === 'result') {
-        send('result', { error: sdkMsg.is_error, cost: sdkMsg.total_cost_usd });
-      }
-    }
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    send('error', { message: msg });
-  }
-
-  send('done', {});
-  try { controller.close(); } catch { /* */ }
-}
-
 // --- Claude Max: Local OAuth (~/.claude/) ---
 async function handleClaudeMax(
   message: string,
@@ -284,29 +217,16 @@ export async function POST(request: Request) {
   if (!userEnv.H_CHAT_TOKEN && process.env.H_CHAT_TOKEN) {
     userEnv.H_CHAT_TOKEN = process.env.H_CHAT_TOKEN;
   }
-  if (!userEnv.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY) {
-    userEnv.ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-  }
-
   const hasHChat = !!userEnv.H_CHAT_TOKEN;
-  const hasAnthropic = !!userEnv.ANTHROPIC_API_KEY;
 
   // Determine which mode to use: respect explicit apiMode, fallback to availability
   // claude-max always available (uses ~/.claude/ OAuth)
-  type ResolvedMode = 'h-chat' | 'anthropic' | 'claude-max';
+  type ResolvedMode = 'h-chat' | 'claude-max';
   let resolvedMode: ResolvedMode;
   if (apiMode === 'h-chat' && hasHChat) {
     resolvedMode = 'h-chat';
-  } else if (apiMode === 'anthropic' && hasAnthropic) {
-    resolvedMode = 'anthropic';
-  } else if (apiMode === 'claude-max') {
-    resolvedMode = 'claude-max';
-  } else if (hasHChat) {
-    resolvedMode = 'h-chat';
-  } else if (hasAnthropic) {
-    resolvedMode = 'anthropic';
   } else {
-    resolvedMode = 'claude-max'; // fallback to local OAuth
+    resolvedMode = 'claude-max';
   }
 
   const encoder = new TextEncoder();
@@ -314,8 +234,6 @@ export async function POST(request: Request) {
     start(controller) {
       if (resolvedMode === 'h-chat') {
         handleHChat(message, userEnv.H_CHAT_TOKEN, controller, encoder);
-      } else if (resolvedMode === 'anthropic') {
-        handleAnthropic(message, userEnv.ANTHROPIC_API_KEY, controller, encoder);
       } else {
         // claude-max: SDK uses ~/.claude/ OAuth, no API key injected
         handleClaudeMax(message, controller, encoder);

@@ -12,7 +12,7 @@ const FE1_WEB_KEY_TO_COLUMN: Record<string, string> = {
 };
 
 // harness DB에 저장되는 키
-const HARNESS_KEYS = new Set(['ANTHROPIC_API_KEY', 'GITLAB_EMAIL', 'GITLAB_TOKEN']);
+const HARNESS_KEYS = new Set(['GITLAB_EMAIL', 'GITLAB_TOKEN']);
 
 export async function PUT(request: Request) {
   const body = await request.json();

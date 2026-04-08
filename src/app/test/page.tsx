@@ -19,7 +19,7 @@ interface TestRun {
   startedAt?: string;
 }
 
-const MODES: ApiMode[] = ['h-chat', 'claude-max', 'anthropic'];
+const MODES: ApiMode[] = ['h-chat', 'claude-max'];
 
 export default function TestPage() {
   const { selectedUser } = useUser();

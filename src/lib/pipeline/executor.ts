@@ -108,11 +108,10 @@ const H_CHAT_CONFIG = {
   DISABLE_AUTOUPDATER: '1',
 };
 
-export type ApiMode = 'h-chat' | 'anthropic' | 'claude-max';
+export type ApiMode = 'h-chat' | 'claude-max';
 
 export function resolveApiMode(envVars: Record<string, string>): ApiMode {
   if (envVars.H_CHAT_TOKEN) return 'h-chat';
-  if (envVars.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY) return 'anthropic';
   // Fallback: use local Claude Code OAuth session (~/.claude/)
   return 'claude-max';
 }
@@ -121,7 +120,6 @@ export function resolveApiMode(envVars: Record<string, string>): ApiMode {
 const DEFAULT_MODEL_BY_MODE: Record<ApiMode, string> = {
   'h-chat':     'claude-sonnet-4-6',
   'claude-max': 'claude-opus-4-6',
-  'anthropic':  'claude-opus-4-6',
 };
 
 // H-Chat only supports these models (no opus)
@@ -151,8 +149,6 @@ export async function executePipeline(options: {
   let apiMode: ApiMode;
   if (options.apiMode === 'h-chat' && envVars.H_CHAT_TOKEN) {
     apiMode = 'h-chat';
-  } else if (options.apiMode === 'anthropic' && (envVars.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY)) {
-    apiMode = 'anthropic';
   } else if (options.apiMode === 'claude-max') {
     apiMode = 'claude-max';
   } else {
@@ -176,7 +172,6 @@ export async function executePipeline(options: {
     delete sdkEnv.ANTHROPIC_API_KEY;
     delete sdkEnv.ANTHROPIC_BASE_URL;
   }
-  // anthropic mode: ANTHROPIC_API_KEY is already in sdkEnv
 
   // Determine prompt:
   // - If genericPipeline or projectSlug+taskType → orchestrator.md (dynamic pipeline)
@@ -208,7 +203,7 @@ export async function executePipeline(options: {
 
   pipelineEventBus.emit(sessionId, 'status', { status: 'running' });
   pipelineEventBus.emit(sessionId, 'log', {
-    content: `[시스템] API 모드: ${{ 'h-chat': 'H-Chat (회사 내부)', 'anthropic': 'Anthropic API', 'claude-max': 'Claude Max (로컬 OAuth)' }[apiMode]}`,
+    content: `[시스템] API 모드: ${{ 'h-chat': 'H-Chat (회사 내부)', 'claude-max': 'Claude Max (로컬 OAuth)' }[apiMode]}`,
     timestamp: new Date().toISOString(),
   });
 

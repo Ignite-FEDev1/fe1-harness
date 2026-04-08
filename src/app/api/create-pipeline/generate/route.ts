@@ -284,47 +284,6 @@ async function handleHChat(
   try { controller.close(); } catch { /* */ }
 }
 
-async function handleAnthropic(
-  messages: Message[],
-  apiKey: string,
-  model: string,
-  send: Sender,
-  controller: ReadableStreamDefaultController,
-) {
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 8192,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: buildUserMessage(messages) }],
-        stream: true,
-      }),
-    });
-    if (!res.ok) {
-      send('error', { message: `Anthropic API ${res.status}: ${(await res.text()).slice(0, 300)}` });
-      try { controller.close(); } catch { /* */ }
-      return;
-    }
-    const fullText = await collectAnthropicSse(res, send);
-    const pipelineName = writeGeneratedFiles(fullText, send);
-    if (pipelineName) {
-      send('done', { pipelineName });
-    } else {
-      send('error', { message: '파이프라인 이름을 추출할 수 없습니다. 생성된 파일을 /pipelines에서 확인해 주세요.' });
-    }
-  } catch (err) {
-    send('error', { message: err instanceof Error ? err.message : String(err) });
-  }
-  try { controller.close(); } catch { /* */ }
-}
-
 async function handleClaudeMax(
   messages: Message[],
   model: string,
@@ -412,18 +371,11 @@ export async function POST(request: Request) {
 
   const userEnv = userId ? await loadUserEnv(userId) : {};
   if (!userEnv.H_CHAT_TOKEN && process.env.H_CHAT_TOKEN) userEnv.H_CHAT_TOKEN = process.env.H_CHAT_TOKEN;
-  if (!userEnv.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY) userEnv.ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-
   const hasHChat = !!userEnv.H_CHAT_TOKEN;
-  const hasAnthropic = !!userEnv.ANTHROPIC_API_KEY;
 
-  type Mode = 'h-chat' | 'anthropic' | 'claude-max';
+  type Mode = 'h-chat' | 'claude-max';
   let resolvedMode: Mode;
   if (apiMode === 'h-chat' && hasHChat) resolvedMode = 'h-chat';
-  else if (apiMode === 'anthropic' && hasAnthropic) resolvedMode = 'anthropic';
-  else if (apiMode === 'claude-max') resolvedMode = 'claude-max';
-  else if (hasHChat) resolvedMode = 'h-chat';
-  else if (hasAnthropic) resolvedMode = 'anthropic';
   else resolvedMode = 'claude-max';
 
   const resolvedModel: string = model ?? 'claude-sonnet-4-6';
@@ -434,8 +386,6 @@ export async function POST(request: Request) {
       const send = makeSender(controller, encoder);
       if (resolvedMode === 'h-chat') {
         handleHChat(messages, userEnv.H_CHAT_TOKEN, resolvedModel, send, controller);
-      } else if (resolvedMode === 'anthropic') {
-        handleAnthropic(messages, userEnv.ANTHROPIC_API_KEY, resolvedModel, send, controller);
       } else {
         handleClaudeMax(messages, resolvedModel, send, controller);
       }

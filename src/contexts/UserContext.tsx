@@ -23,7 +23,7 @@ export interface Fe1User {
   tokens: Record<string, TokenInfo>;
 }
 
-export type ApiMode = 'h-chat' | 'anthropic' | 'claude-max';
+export type ApiMode = 'h-chat' | 'claude-max';
 
 export const MODEL_OPTIONS: Record<ApiMode, { value: string; label: string }[]> = {
   'h-chat': [
@@ -36,17 +36,11 @@ export const MODEL_OPTIONS: Record<ApiMode, { value: string; label: string }[]> 
     { value: 'claude-sonnet-4-6',         label: 'sonnet·4.6' },
     { value: 'claude-haiku-4-5-20251001', label: 'haiku·4.5'  },
   ],
-  'anthropic': [
-    { value: 'claude-opus-4-6',          label: 'opus·4.6'   },
-    { value: 'claude-sonnet-4-6',         label: 'sonnet·4.6' },
-    { value: 'claude-haiku-4-5-20251001', label: 'haiku·4.5'  },
-  ],
 };
 
 export const DEFAULT_MODEL: Record<ApiMode, string> = {
   'h-chat':     'claude-sonnet-4-6',
   'claude-max': 'claude-opus-4-6',
-  'anthropic':  'claude-opus-4-6',
 };
 
 export const API_MODE_META: Record<ApiMode, { label: string; desc: string; color: string; bg: string; border: string }> = {
@@ -63,13 +57,6 @@ export const API_MODE_META: Record<ApiMode, { label: string; desc: string; color
     color: 'var(--accent-green)',
     bg: 'var(--accent-green-subtle)',
     border: 'var(--accent-green-glow)',
-  },
-  'anthropic': {
-    label: 'ANTHROPIC',
-    desc: 'API 키 직접 사용',
-    color: 'var(--accent-cyan)',
-    bg: 'var(--accent-cyan-glow)',
-    border: 'rgba(6,182,212,0.3)',
   },
 };
 
@@ -135,7 +122,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (storedUser) setSelectedUserId(storedUser);
 
     const storedMode = localStorage.getItem(API_MODE_KEY);
-    if (storedMode === 'h-chat' || storedMode === 'anthropic' || storedMode === 'claude-max') {
+    if (storedMode === 'h-chat' || storedMode === 'claude-max') {
       setApiModeState(storedMode);
     }
 
@@ -172,7 +159,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const availableModes: ApiMode[] = ['claude-max'];
   if (selectedUser) {
     if (selectedUser.tokens.H_CHAT_TOKEN?.masked) availableModes.unshift('h-chat');
-    if (selectedUser.tokens.ANTHROPIC_API_KEY?.masked) availableModes.push('anthropic');
   }
 
   // Auto-correct if current mode is not available

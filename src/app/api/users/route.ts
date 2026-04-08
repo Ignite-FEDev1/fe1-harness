@@ -15,7 +15,6 @@ const FE1_WEB_TOKENS: { key: string; column: string; label: string; sensitive: b
 
 // harness 자체 DB에서 관리하는 토큰
 const HARNESS_TOKENS: { key: string; label: string; sensitive: boolean }[] = [
-  { key: 'ANTHROPIC_API_KEY', label: 'Anthropic API Key (claude)', sensitive: true },
   { key: 'GITLAB_EMAIL', label: 'GitLab Email', sensitive: false },
   { key: 'GITLAB_TOKEN', label: 'GitLab Private Token', sensitive: true },
 ];
