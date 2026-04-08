@@ -19,7 +19,7 @@ export interface AiEditContext {
 
 interface AiEditPanelProps {
   context: AiEditContext;
-  onApply: (content: string) => void;
+  onApply: (content: string) => void | Promise<void>;
 }
 
 function extractApply(text: string): string | undefined {
@@ -38,6 +38,8 @@ export function AiEditPanel({ context, onApply }: AiEditPanelProps) {
   const [streaming, setStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState('');
   const [elapsed, setElapsed] = useState(0);
+  const [applyingIdx, setApplyingIdx] = useState<number | null>(null);
+  const [appliedSet, setAppliedSet] = useState<Set<number>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -200,25 +202,53 @@ export function AiEditPanel({ context, onApply }: AiEditPanelProps) {
             }}>
               {msg.applyContent ? stripApplyTags(msg.content) : msg.content}
             </div>
-            {msg.applyContent && (
-              <button
-                onClick={() => onApply(msg.applyContent!)}
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  letterSpacing: '0.06em',
-                  padding: '4px 12px',
-                  borderRadius: '4px',
-                  background: 'rgba(0,230,118,0.1)',
-                  color: 'var(--accent-green)',
-                  border: '1px solid rgba(0,230,118,0.3)',
-                  cursor: 'pointer',
-                }}
-              >
-                ↓ 적용
-              </button>
-            )}
+            {msg.applyContent && (() => {
+              const isApplying = applyingIdx === i;
+              const isApplied = appliedSet.has(i);
+              return (
+                <button
+                  onClick={async () => {
+                    if (isApplying || isApplied) return;
+                    setApplyingIdx(i);
+                    try {
+                      await onApply(msg.applyContent!);
+                      setAppliedSet((prev) => new Set(prev).add(i));
+                    } finally {
+                      setApplyingIdx(null);
+                    }
+                  }}
+                  disabled={isApplying || isApplied}
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    letterSpacing: '0.06em',
+                    padding: '4px 12px',
+                    borderRadius: '4px',
+                    background: isApplied
+                      ? 'rgba(0,230,118,0.2)'
+                      : isApplying
+                        ? 'rgba(0,229,255,0.1)'
+                        : 'rgba(0,230,118,0.1)',
+                    color: isApplied
+                      ? 'var(--accent-green)'
+                      : isApplying
+                        ? 'var(--accent-cyan)'
+                        : 'var(--accent-green)',
+                    border: isApplied
+                      ? '1px solid rgba(0,230,118,0.5)'
+                      : isApplying
+                        ? '1px solid rgba(0,229,255,0.3)'
+                        : '1px solid rgba(0,230,118,0.3)',
+                    cursor: isApplying || isApplied ? 'default' : 'pointer',
+                    opacity: isApplying ? 0.7 : 1,
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {isApplied ? '✓ 적용됨' : isApplying ? '적용 중...' : '↓ 적용'}
+                </button>
+              );
+            })()}
           </div>
         ))}
 
