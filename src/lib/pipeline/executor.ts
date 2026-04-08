@@ -1,5 +1,5 @@
 import { query } from '@anthropic-ai/claude-agent-sdk';
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
 import path from 'path';
 
 import { setActiveQuery, removeActiveQuery, isSessionStopped, clearStopFlag } from './active-queries';
@@ -258,6 +258,9 @@ export async function executePipeline(options: {
     setActiveQuery(sessionId, q);
 
     let accumulatedText = '';
+    let totalCost: number | undefined;
+    let totalTurns: number | undefined;
+    let claudeSessionIdValue: string | undefined;
 
     for await (const message of q) {
       const sdkMsg = message as unknown as SDKMessage;
@@ -273,9 +276,12 @@ export async function executePipeline(options: {
         } else {
           const cost = sdkMsg.total_cost_usd;
           content = `[완료] 성공 (${cost != null ? `$${cost.toFixed(4)}` : '비용 미제공'}, ${sdkMsg.num_turns ?? 0}턴)`;
+          totalCost = cost;
+          totalTurns = sdkMsg.num_turns;
         }
         // Save Claude session ID so users can resume in CLI
         if (sdkMsg.session_id) {
+          claudeSessionIdValue = sdkMsg.session_id;
           await supabase
             .from('sessions')
             .update({ claude_session_id: sdkMsg.session_id })
@@ -406,6 +412,20 @@ export async function executePipeline(options: {
         })
         .eq('id', sessionId);
       pipelineEventBus.emit(sessionId, 'status', { status: 'completed' });
+    }
+
+    // Update meta.json with execution results
+    const metaPath = path.join(docsDir, 'meta.json');
+    if (existsSync(metaPath)) {
+      try {
+        const meta = JSON.parse(readFileSync(metaPath, 'utf-8'));
+        meta.completed_at = new Date().toISOString();
+        meta.cost_usd = totalCost;
+        meta.turns = totalTurns;
+        meta.claude_session_id = claudeSessionIdValue;
+        meta.status = session?.status ?? 'completed';
+        writeFileSync(metaPath, JSON.stringify(meta, null, 2), 'utf-8');
+      } catch { /* ignore meta update failure */ }
     }
 
     pipelineEventBus.emit(sessionId, 'done', {});

@@ -174,14 +174,56 @@ export function generateSessionMd(input: SessionFormData): string {
   return lines.join('\n') + '\n';
 }
 
+/** Sanitize a string for safe use as a directory name. */
+function sanitizeDirName(name: string): string {
+  return name
+    .replace(/[/\\:*?"<>|\0]/g, '')  // remove unsafe chars
+    .replace(/\s+/g, '-')            // spaces → hyphens
+    .replace(/-+/g, '-')             // collapse hyphens
+    .replace(/^-|-$/g, '')           // trim hyphens
+    .slice(0, 30)                    // max length
+    || 'unnamed';
+}
+
+export interface SessionMeta {
+  session_id: string;
+  session_name: string;
+  created_at: string;
+  api_mode?: string;
+  model?: string;
+  pipeline?: string;
+  special_rule?: string;
+}
+
 export function writeSessionMd(
   harnessRoot: string,
   sessionId: string,
   data: SessionFormData,
+  meta?: { sessionName?: string; apiMode?: string; model?: string },
 ): string {
-  const docsDir = path.join(harnessRoot, 'sessions', sessionId);
+  // Build readable folder name: {date}_{name}_{uuid8}
+  const date = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const name = sanitizeDirName(meta?.sessionName || data.generic_pipeline || 'session');
+  const shortId = sessionId.slice(0, 8);
+  const folderName = `${date}_${name}_${shortId}`;
+
+  const docsDir = path.join(harnessRoot, 'sessions', folderName);
   fs.mkdirSync(docsDir, { recursive: true });
-  const filePath = path.join(docsDir, 'session.md');
-  fs.writeFileSync(filePath, generateSessionMd(data), 'utf-8');
+
+  // Write session.md
+  fs.writeFileSync(path.join(docsDir, 'session.md'), generateSessionMd(data), 'utf-8');
+
+  // Write meta.json
+  const sessionMeta: SessionMeta = {
+    session_id: sessionId,
+    session_name: meta?.sessionName || name,
+    created_at: new Date().toISOString(),
+    api_mode: meta?.apiMode,
+    model: meta?.model,
+    pipeline: data.generic_pipeline,
+    special_rule: data.special_rule,
+  };
+  fs.writeFileSync(path.join(docsDir, 'meta.json'), JSON.stringify(sessionMeta, null, 2), 'utf-8');
+
   return docsDir;
 }

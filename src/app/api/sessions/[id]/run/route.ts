@@ -130,11 +130,17 @@ export async function POST(
     ? [existingNotes, additionalNotes].filter(Boolean).join('\n\n---\n\n추가 컨텍스트:\n')
     : existingNotes;
 
-  const docsDir = writeSessionMd(harnessRoot, sessionId, {
-    ...formData,
-    project_path: projectPath,
-    notes: mergedNotes,
-  });
+  const resolvedModel = model ?? 'claude-sonnet-4-6';
+  const resolvedApiMode = apiMode
+    ?? (formData.api_mode as string | undefined)
+    ?? undefined;
+
+  const docsDir = writeSessionMd(
+    harnessRoot,
+    sessionId,
+    { ...formData, project_path: projectPath, notes: mergedNotes },
+    { sessionName: session.name, apiMode: resolvedApiMode, model: resolvedModel },
+  );
 
   // Update session with docs_dir
   await supabase
