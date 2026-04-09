@@ -64,6 +64,7 @@ interface UserContextValue {
   users: Fe1User[];
   selectedUser: Fe1User | null;
   loading: boolean;
+  hydrated: boolean;
   selectUser: (userId: string) => void;
   refreshUsers: () => Promise<void>;
   apiMode: ApiMode;
@@ -78,6 +79,7 @@ const UserContext = createContext<UserContextValue>({
   users: [],
   selectedUser: null,
   loading: true,
+  hydrated: false,
   selectUser: () => {},
   refreshUsers: async () => {},
   apiMode: 'h-chat',
@@ -96,6 +98,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<Fe1User[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hydrated, setHydrated] = useState(false);
   const [apiMode, setApiModeState] = useState<ApiMode>('claude-max');
   const [modelByMode, setModelByModeState] = useState<Record<ApiMode, string>>({ ...DEFAULT_MODEL });
 
@@ -133,6 +136,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         setModelByModeState((prev) => ({ ...prev, ...parsed }));
       } catch { /* ignore */ }
     }
+    setHydrated(true);
   }, []);
 
   const selectUser = useCallback((userId: string) => {
@@ -176,6 +180,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         users,
         selectedUser,
         loading,
+        hydrated,
         selectUser,
         refreshUsers: fetchUsers,
         apiMode,

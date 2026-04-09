@@ -21,7 +21,7 @@ const MODE_COLORS: Record<string, { active: string; bg: string; glow: string; te
 
 export function AppHeader() {
   const pathname = usePathname();
-  const { selectedUser, apiMode, setApiMode, availableModes, currentModel, setModelForMode } = useUser();
+  const { selectedUser, apiMode, setApiMode, availableModes, currentModel, setModelForMode, hydrated } = useUser();
 
   return (
     <header
@@ -80,7 +80,7 @@ export function AppHeader() {
       <div className="flex items-center" style={{ gap: '6px' }}>
 
         {/* ── API Mode Toggle ── */}
-        <div
+        {hydrated && <div
           className="flex items-center"
           style={{
             background: 'rgba(255,255,255,0.04)',
@@ -116,16 +116,16 @@ export function AppHeader() {
               </button>
             );
           })}
-        </div>
+        </div>}
 
         {/* ── Model Selector ── */}
-        <div style={{ width: '110px', marginRight: '2px' }}>
+        {hydrated && <div style={{ width: '110px', marginRight: '2px' }}>
           <Select
             value={currentModel}
             onChange={(v) => setModelForMode(apiMode, v)}
             options={MODEL_OPTIONS[apiMode]}
           />
-        </div>
+        </div>}
 
         {/* ── Nav Links ── */}
         {NAV_LINKS.map(({ href, label }) => {
